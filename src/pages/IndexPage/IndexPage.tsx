@@ -24,6 +24,14 @@ export const IndexPage: FC = () => {
               TON Connect
             </Cell>
           </Link>
+          <Link to="/profile">
+            <Cell
+              before={<Image src={projectImage} style={{ backgroundColor: '#007AFF' }} />}
+              subtitle="User Profile"
+            >
+              Profile
+            </Cell>
+          </Link>
         </Section>
         <Section
           header="Application Launch Data"
