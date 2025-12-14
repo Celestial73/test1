@@ -1,5 +1,29 @@
-import { MapPin, Briefcase, GraduationCap, Music, Camera, Plane, Coffee, Edit2, Check, X as XIcon, Trash2, ChevronLeft, ChevronRight, Plus, Info } from 'lucide-react';
+import {
+    Avatar,
+    Button,
+    Cell,
+    List,
+    Section,
+    Textarea,
+    Input,
+    IconButton
+} from '@telegram-apps/telegram-ui';
+import {
+    Briefcase,
+    GraduationCap,
+    MapPin,
+    Camera,
+    Music,
+    Plane,
+    Coffee,
+    Trash2,
+    Plus as PlusIcon,
+    X as XIcon,
+    Check,
+    Info
+} from 'lucide-react';
 import { useState } from 'react';
+
 import { Page } from '@/components/Page.tsx';
 
 export function Profile() {
@@ -10,6 +34,7 @@ export function Profile() {
     const [newFieldName, setNewFieldName] = useState('');
     const [newFieldValue, setNewFieldValue] = useState('');
     const [newInterest, setNewInterest] = useState('');
+
     const [profileData, setProfileData] = useState({
         name: 'Sarah',
         age: '28',
@@ -49,14 +74,6 @@ export function Profile() {
         setShowAddField(false);
         setShowAddInterest(false);
         // Reset to original data if needed
-    };
-
-    const nextPhoto = () => {
-        setCurrentPhotoIndex((prev) => (prev + 1) % profileData.photos.length);
-    };
-
-    const prevPhoto = () => {
-        setCurrentPhotoIndex((prev) => (prev - 1 + profileData.photos.length) % profileData.photos.length);
     };
 
     const deleteSection = (section: string) => {
@@ -101,8 +118,8 @@ export function Profile() {
             const newInterestObj = {
                 id: Date.now().toString(),
                 name: newInterest,
-                icon: 'Music', // Default icon, can be changed based on user input
-                color: 'pink', // Default color, can be changed based on user input
+                icon: 'Music', // Default icon
+                color: 'pink', // Default color
             };
             setProfileData({
                 ...profileData,
@@ -130,426 +147,250 @@ export function Profile() {
         return icons[iconName] || Music;
     };
 
-    const getColorClasses = (color: string) => {
-        const colors: { [key: string]: { bg: string; border: string; text: string } } = {
-            pink: { bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-500' },
-            purple: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-500' },
-            blue: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-500' },
-            amber: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-600' },
-        };
-        return colors[color] || colors.pink;
-    };
-
     return (
         <Page>
-            <div className="h-full overflow-y-auto bg-white">
-                {/* Main Profile Image with Name Overlay - Tinder Style with Swipe */}
-                <div className="relative">
-                    <img
-                        src={profileData.photos[currentPhotoIndex]}
-                        alt="Profile"
-                        className="w-full h-[75vh] object-cover"
-                    />
-
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-
-                    {/* Photo Navigation Arrows */}
-                    {profileData.photos.length > 1 && (
-                        <>
-                            <button
-                                onClick={prevPhoto}
-                                className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/30 backdrop-blur-sm rounded-full flex items-center justify-center text-white"
-                            >
-                                <ChevronLeft className="w-6 h-6" />
-                            </button>
-                            <button
-                                onClick={nextPhoto}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/30 backdrop-blur-sm rounded-full flex items-center justify-center text-white"
-                            >
-                                <ChevronRight className="w-6 h-6" />
-                            </button>
-                        </>
-                    )}
-
-                    {/* Photo Indicators */}
-                    <div className="absolute top-3 left-0 right-0 flex gap-1 px-3">
-                        {profileData.photos.map((_, index) => (
-                            <div
-                                key={index}
-                                className={`h-1 flex-1 rounded-full transition-all ${index === currentPhotoIndex ? 'bg-white' : 'bg-white/30'
-                                    }`}
-                            />
-                        ))}
-                    </div>
-
-                    {/* Edit Photo Button */}
-                    {isEditing && (
-                        <button className="absolute top-12 right-5 w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
-                            <Camera className="w-5 h-5 text-gray-700" />
-                        </button>
-                    )}
-
-                    {/* Edit Button (top right when not editing) */}
-                    {!isEditing && (
-                        <button
-                            onClick={() => setIsEditing(true)}
-                            className="absolute top-5 right-5 px-4 py-2 bg-white rounded-full flex items-center gap-2 shadow-lg"
-                        >
-                            <Edit2 className="w-4 h-4 text-gray-700" />
-                            <span className="text-sm">Edit</span>
-                        </button>
-                    )}
-
-                    {/* Name and Age - Positioned at bottom of image */}
-                    <div className="absolute bottom-5 left-5 text-white">
+            <List>
+                {/* Header & Photo Section */}
+                <Section>
+                    <div style={{ padding: 20, textAlign: 'center' }}>
+                        <Avatar
+                            size={96}
+                            src={profileData.photos[currentPhotoIndex]}
+                            style={{ margin: '0 auto 10px' }}
+                            onClick={() => {
+                                // Simple photo rotation
+                                setCurrentPhotoIndex((prev) => (prev + 1) % profileData.photos.length);
+                            }}
+                        />
                         {isEditing ? (
-                            <div className="flex items-end gap-2">
-                                <input
-                                    type="text"
+                            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 10 }}>
+                                <Input
+                                    header="Name"
                                     value={profileData.name}
                                     onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                                    className="text-5xl bg-white/20 backdrop-blur-sm border-2 border-white/40 rounded-lg px-3 py-1 text-white placeholder-white/60 w-40"
-                                    placeholder="Name"
                                 />
-                                <input
-                                    type="text"
+                                <Input
+                                    header="Age"
                                     value={profileData.age}
                                     onChange={(e) => setProfileData({ ...profileData, age: e.target.value })}
-                                    className="text-5xl bg-white/20 backdrop-blur-sm border-2 border-white/40 rounded-lg px-3 py-1 text-white placeholder-white/60 w-20"
-                                    placeholder="Age"
                                 />
                             </div>
                         ) : (
-                            <h1 className="text-5xl mb-1">{profileData.name}, {profileData.age}</h1>
+                            <div style={{ fontSize: 24, fontWeight: 'bold' }}>
+                                {profileData.name}, {profileData.age}
+                            </div>
                         )}
-                        <div className="flex items-center gap-1.5 mt-2">
-                            <MapPin className="w-4 h-4" />
-                            <span className="text-base">{profileData.distance} miles away</span>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, color: 'var(--tgui--secondary_text_color)' }}>
+                            <MapPin size={16} />
+                            <span>{profileData.distance} miles away</span>
                         </div>
                     </div>
-                </div>
 
-                {/* Save/Cancel Buttons */}
-                {isEditing && (
-                    <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-5 py-3 flex gap-3">
-                        <button
-                            onClick={handleCancel}
-                            className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl flex items-center justify-center gap-2 active:bg-gray-200"
-                        >
-                            <XIcon className="w-4 h-4" />
-                            Cancel
-                        </button>
-                        <button
-                            onClick={handleSave}
-                            className="flex-1 py-2.5 bg-pink-500 text-white rounded-xl flex items-center justify-center gap-2 active:bg-pink-600"
-                        >
-                            <Check className="w-4 h-4" />
-                            Save
-                        </button>
-                    </div>
+                    <Cell
+                        before={isEditing ? <XIcon size={20} /> : <Camera size={20} />}
+                        after={
+                            isEditing ? (
+                                <Button size="s" onClick={handleSave} mode="filled" before={<Check size={16} />}>Save</Button>
+                            ) : (
+                                <Button size="s" onClick={() => setIsEditing(true)} mode="bezeled">Edit Profile</Button>
+                            )
+                        }
+                        onClick={isEditing ? handleCancel : () => { }}
+                    >
+                        {isEditing ? 'Cancel Editing' : 'Viewer Mode'}
+                    </Cell>
+                </Section>
+
+                {/* Bio Section */}
+                {profileData.showBio && (
+                    <Section header="About">
+                        {isEditing ? (
+                            <Textarea
+                                placeholder="Tell people about yourself..."
+                                value={profileData.bio}
+                                onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                            />
+                        ) : (
+                            <Cell multiline>{profileData.bio}</Cell>
+                        )}
+                        {isEditing && (
+                            <Button mode="plain" size="s" onClick={() => deleteSection('showBio')}>
+                                <Trash2 size={16} /> Remove Section
+                            </Button>
+                        )}
+                    </Section>
                 )}
 
-                {/* Detailed Information Revealed on Scroll */}
-                <div className="bg-white px-5 py-6 space-y-6">
-                    {/* About Section */}
-                    {profileData.showBio && (
-                        <section className="relative">
-                            {isEditing && (
-                                <button
-                                    onClick={() => deleteSection('showBio')}
-                                    className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg z-10"
-                                >
-                                    <Trash2 className="w-4 h-4 text-white" />
-                                </button>
-                            )}
-                            <h2 className="text-xl mb-2.5 text-gray-900">About</h2>
+                {/* Info Section */}
+                <Section header="Details">
+                    {profileData.showWork && (
+                        <Cell
+                            before={<Avatar size={28} style={{ background: 'var(--tgui--secondary_bg_color)' }}><Briefcase size={16} /></Avatar>}
+                            description={isEditing ? 'Job Title' : undefined}
+                            after={isEditing && <IconButton mode="plain" onClick={() => deleteSection('showWork')}><Trash2 size={16} /></IconButton>}
+                        >
                             {isEditing ? (
-                                <textarea
-                                    value={profileData.bio}
-                                    onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-                                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 leading-relaxed resize-none"
-                                    rows={4}
-                                    placeholder="Tell people about yourself..."
+                                <Input
+                                    value={profileData.work}
+                                    onChange={(e) => setProfileData({ ...profileData, work: e.target.value })}
                                 />
                             ) : (
-                                <p className="text-gray-700 leading-relaxed">
-                                    {profileData.bio}
-                                </p>
+                                profileData.work
                             )}
-                        </section>
+                        </Cell>
                     )}
 
-                    {/* Info Cards */}
-                    <section className="space-y-3">
-                        {profileData.showWork && (
-                            <div className="relative flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                                {isEditing && (
-                                    <button
-                                        onClick={() => deleteSection('showWork')}
-                                        className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg z-10"
-                                    >
-                                        <Trash2 className="w-4 h-4 text-white" />
-                                    </button>
-                                )}
-                                <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center shrink-0">
-                                    <Briefcase className="w-5 h-5 text-pink-500" />
+                    {profileData.showEducation && (
+                        <Cell
+                            before={<Avatar size={28} style={{ background: 'var(--tgui--secondary_bg_color)' }}><GraduationCap size={16} /></Avatar>}
+                            description={isEditing ? 'Education' : undefined}
+                            after={isEditing && <IconButton mode="plain" onClick={() => deleteSection('showEducation')}><Trash2 size={16} /></IconButton>}
+                        >
+                            {isEditing ? (
+                                <Input
+                                    value={profileData.education}
+                                    onChange={(e) => setProfileData({ ...profileData, education: e.target.value })}
+                                />
+                            ) : (
+                                profileData.education
+                            )}
+                        </Cell>
+                    )}
+
+                    {profileData.showLocation && (
+                        <Cell
+                            before={<Avatar size={28} style={{ background: 'var(--tgui--secondary_bg_color)' }}><MapPin size={16} /></Avatar>}
+                            description={isEditing ? 'Location' : undefined}
+                            after={isEditing && <IconButton mode="plain" onClick={() => deleteSection('showLocation')}><Trash2 size={16} /></IconButton>}
+                        >
+                            {isEditing ? (
+                                <Input
+                                    value={profileData.location}
+                                    onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                                />
+                            ) : (
+                                profileData.location
+                            )}
+                        </Cell>
+                    )}
+
+                    {/* Custom Fields */}
+                    {profileData.customFields.map((field) => (
+                        <Cell
+                            key={field.id}
+                            before={<Avatar size={28} style={{ background: 'var(--tgui--secondary_bg_color)' }}><Info size={16} /></Avatar>}
+                            description={isEditing ? 'Custom Field' : field.name}
+                            after={isEditing && <IconButton mode="plain" onClick={() => deleteCustomField(field.id)}><Trash2 size={16} /></IconButton>}
+                        >
+                            {isEditing ? (
+                                <div style={{ display: 'flex', gap: 5 }}>
+                                    <Input
+                                        placeholder="Name"
+                                        value={field.name}
+                                        onChange={(e) => updateCustomField(field.id, 'name', e.target.value)}
+                                    />
+                                    <Input
+                                        placeholder="Value"
+                                        value={field.value}
+                                        onChange={(e) => updateCustomField(field.id, 'value', e.target.value)}
+                                    />
                                 </div>
-                                <div className="flex-1">
-                                    <div className="text-sm text-gray-500">Work</div>
-                                    {isEditing ? (
-                                        <input
-                                            type="text"
-                                            value={profileData.work}
-                                            onChange={(e) => setProfileData({ ...profileData, work: e.target.value })}
-                                            className="w-full mt-1 px-2 py-1 bg-white border border-gray-200 rounded text-gray-900"
-                                            placeholder="Your job"
+                            ) : (
+                                field.value
+                            )}
+                        </Cell>
+                    ))}
+
+                    {/* Add Custom Field */}
+                    {isEditing && (
+                        <Cell>
+                            {showAddField ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+                                    <Input
+                                        placeholder="Field Name"
+                                        value={newFieldName}
+                                        onChange={(e) => setNewFieldName(e.target.value)}
+                                    />
+                                    <Input
+                                        placeholder="Field Value"
+                                        value={newFieldValue}
+                                        onChange={(e) => setNewFieldValue(e.target.value)}
+                                    />
+                                    <div style={{ display: 'flex', gap: 10 }}>
+                                        <Button size="s" onClick={addCustomField}>Add</Button>
+                                        <Button size="s" mode="gray" onClick={() => setShowAddField(false)}>Cancel</Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <Button mode="plain" size="s" onClick={() => setShowAddField(true)}>
+                                    <PlusIcon size={16} style={{ marginRight: 5 }} /> Add Custom Field
+                                </Button>
+                            )}
+                        </Cell>
+                    )}
+                </Section>
+
+
+                {/* Interests Section */}
+                {profileData.showInterests && (
+                    <Section header="Interests">
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '0 20px 20px' }}>
+                            {profileData.interests.map((interest) => {
+                                const IconComponent = getIconComponent(interest.icon);
+                                // Fallback for color mapping or use TGUI chips ideally
+                                return (
+                                    <div
+                                        key={interest.id}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 6,
+                                            padding: '6px 12px',
+                                            background: 'var(--tgui--secondary_bg_color)',
+                                            borderRadius: 16,
+                                            fontSize: 14
+                                        }}
+                                    >
+                                        <IconComponent size={14} />
+                                        {interest.name}
+                                        {isEditing && (
+                                            <XIcon
+                                                size={14}
+                                                style={{ cursor: 'pointer', opacity: 0.6 }}
+                                                onClick={() => deleteInterest(interest.id)}
+                                            />
+                                        )}
+                                    </div>
+                                );
+                            })}
+
+                            {isEditing && (
+                                showAddInterest ? (
+                                    <div style={{ display: 'flex', gap: 5, width: '100%', marginTop: 10 }}>
+                                        <Input
+                                            placeholder="Interest"
+                                            value={newInterest}
+                                            onChange={(e) => setNewInterest(e.target.value)}
                                         />
-                                    ) : (
-                                        <div className="text-gray-900">{profileData.work}</div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {profileData.showEducation && (
-                            <div className="relative flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                                {isEditing && (
-                                    <button
-                                        onClick={() => deleteSection('showEducation')}
-                                        className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg z-10"
-                                    >
-                                        <Trash2 className="w-4 h-4 text-white" />
-                                    </button>
-                                )}
-                                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                                    <GraduationCap className="w-5 h-5 text-blue-500" />
-                                </div>
-                                <div className="flex-1">
-                                    <div className="text-sm text-gray-500">Education</div>
-                                    {isEditing ? (
-                                        <input
-                                            type="text"
-                                            value={profileData.education}
-                                            onChange={(e) => setProfileData({ ...profileData, education: e.target.value })}
-                                            className="w-full mt-1 px-2 py-1 bg-white border border-gray-200 rounded text-gray-900"
-                                            placeholder="Your education"
-                                        />
-                                    ) : (
-                                        <div className="text-gray-900">{profileData.education}</div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {profileData.showLocation && (
-                            <div className="relative flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                                {isEditing && (
-                                    <button
-                                        onClick={() => deleteSection('showLocation')}
-                                        className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg z-10"
-                                    >
-                                        <Trash2 className="w-4 h-4 text-white" />
-                                    </button>
-                                )}
-                                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                                    <MapPin className="w-5 h-5 text-green-500" />
-                                </div>
-                                <div className="flex-1">
-                                    <div className="text-sm text-gray-500">Lives in</div>
-                                    {isEditing ? (
-                                        <input
-                                            type="text"
-                                            value={profileData.location}
-                                            onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
-                                            className="w-full mt-1 px-2 py-1 bg-white border border-gray-200 rounded text-gray-900"
-                                            placeholder="City, State"
-                                        />
-                                    ) : (
-                                        <div className="text-gray-900">{profileData.location}</div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Custom Fields */}
-                        {profileData.customFields.map((field) => (
-                            <div key={field.id} className="relative flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                                {isEditing && (
-                                    <button
-                                        onClick={() => deleteCustomField(field.id)}
-                                        className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg z-10"
-                                    >
-                                        <Trash2 className="w-4 h-4 text-white" />
-                                    </button>
-                                )}
-                                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                                    <Info className="w-5 h-5 text-purple-500" />
-                                </div>
-                                <div className="flex-1">
-                                    {isEditing ? (
-                                        <>
-                                            <input
-                                                type="text"
-                                                value={field.name}
-                                                onChange={(e) => updateCustomField(field.id, 'name', e.target.value)}
-                                                className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-sm text-gray-500"
-                                                placeholder="Field name"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={field.value}
-                                                onChange={(e) => updateCustomField(field.id, 'value', e.target.value)}
-                                                className="w-full mt-1 px-2 py-1 bg-white border border-gray-200 rounded text-gray-900"
-                                                placeholder="Value"
-                                            />
-                                        </>
-                                    ) : (
-                                        <>
-                                            <div className="text-sm text-gray-500">{field.name}</div>
-                                            <div className="text-gray-900">{field.value}</div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-
-                        {/* Add New Field Button/Form */}
-                        {isEditing && (
-                            <>
-                                {showAddField ? (
-                                    <div className="flex items-center gap-3 p-4 bg-pink-50 border-2 border-pink-200 rounded-xl">
-                                        <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                                            <Info className="w-5 h-5 text-purple-500" />
-                                        </div>
-                                        <div className="flex-1 space-y-2">
-                                            <input
-                                                type="text"
-                                                value={newFieldName}
-                                                onChange={(e) => setNewFieldName(e.target.value)}
-                                                className="w-full px-2 py-1 bg-white border border-gray-300 rounded text-sm"
-                                                placeholder="Field name (e.g. nose length)"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={newFieldValue}
-                                                onChange={(e) => setNewFieldValue(e.target.value)}
-                                                className="w-full px-2 py-1 bg-white border border-gray-300 rounded"
-                                                placeholder="Value"
-                                            />
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={addCustomField}
-                                                    className="flex-1 py-1.5 bg-pink-500 text-white rounded text-sm"
-                                                >
-                                                    Add
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setShowAddField(false);
-                                                        setNewFieldName('');
-                                                        setNewFieldValue('');
-                                                    }}
-                                                    className="flex-1 py-1.5 bg-gray-200 text-gray-700 rounded text-sm"
-                                                >
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        </div>
+                                        <Button size="s" onClick={addInterest}>Add</Button>
+                                        <Button size="s" mode="gray" onClick={() => setShowAddInterest(false)}>Cancel</Button>
                                     </div>
                                 ) : (
-                                    <button
-                                        onClick={() => setShowAddField(true)}
-                                        className="w-full flex items-center justify-center gap-2 p-4 bg-pink-50 border-2 border-dashed border-pink-300 rounded-xl text-pink-500 hover:bg-pink-100 transition-colors"
-                                    >
-                                        <Plus className="w-5 h-5" />
-                                        <span>Add Custom Field</span>
-                                    </button>
-                                )}
-                            </>
-                        )}
-                    </section>
-
-                    {/* Interests */}
-                    {profileData.showInterests && (
-                        <section className="relative">
-                            {isEditing && (
-                                <button
-                                    onClick={() => deleteSection('showInterests')}
-                                    className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg z-10"
-                                >
-                                    <Trash2 className="w-4 h-4 text-white" />
-                                </button>
+                                    <Button mode="bezeled" size="s" onClick={() => setShowAddInterest(true)} style={{ borderRadius: 16 }}>
+                                        <PlusIcon size={14} /> Add
+                                    </Button>
+                                )
                             )}
-                            <div className="flex items-center justify-between mb-2.5">
-                                <h2 className="text-xl text-gray-900">Interests</h2>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {profileData.interests.map((interest) => {
-                                    const IconComponent = getIconComponent(interest.icon);
-                                    const colorClasses = getColorClasses(interest.color);
-                                    return (
-                                        <div
-                                            key={interest.id}
-                                            className={`flex items-center gap-2 px-4 py-2 ${colorClasses.bg} rounded-full border ${colorClasses.border}`}
-                                        >
-                                            <IconComponent className={`w-4 h-4 ${colorClasses.text}`} />
-                                            <span className="text-sm text-gray-900">{interest.name}</span>
-                                            {isEditing && (
-                                                <button onClick={() => deleteInterest(interest.id)}>
-                                                    <XIcon className="w-3 h-3 text-gray-400 cursor-pointer" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                                {isEditing && (
-                                    <>
-                                        {showAddInterest ? (
-                                            <div className="w-full flex items-start gap-3 p-4 bg-pink-50 border-2 border-pink-200 rounded-xl">
-                                                <div className="flex-1 space-y-2">
-                                                    <input
-                                                        type="text"
-                                                        value={newInterest}
-                                                        onChange={(e) => setNewInterest(e.target.value)}
-                                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded"
-                                                        placeholder="Interest name (e.g. hiking)"
-                                                    />
-                                                    <div className="flex gap-2">
-                                                        <button
-                                                            onClick={addInterest}
-                                                            className="flex-1 py-2 bg-pink-500 text-white rounded"
-                                                        >
-                                                            Add
-                                                        </button>
-                                                        <button
-                                                            onClick={() => {
-                                                                setShowAddInterest(false);
-                                                                setNewInterest('');
-                                                            }}
-                                                            className="flex-1 py-2 bg-gray-200 text-gray-700 rounded"
-                                                        >
-                                                            Cancel
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <button
-                                                onClick={() => setShowAddInterest(true)}
-                                                className="px-4 py-2 bg-pink-50 border-2 border-dashed border-pink-300 rounded-full text-pink-500 hover:bg-pink-100 transition-colors flex items-center gap-2"
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                                <span className="text-sm">Add</span>
-                                            </button>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        </section>
-                    )}
-                </div>
-            </div>
+                        </div>
+                        {isEditing && (
+                            <Button mode="plain" size="s" onClick={() => deleteSection('showInterests')}>
+                                <Trash2 size={16} /> Remove Section
+                            </Button>
+                        )}
+                    </Section>
+                )}
+
+            </List>
         </Page>
     );
 }

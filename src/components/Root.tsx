@@ -1,4 +1,5 @@
 import { TonConnectUIProvider } from '@tonconnect/ui-react';
+import { AppRoot } from '@telegram-apps/telegram-ui';
 
 import { App } from '@/components/App.tsx';
 import { ErrorBoundary } from '@/components/ErrorBoundary.tsx';
@@ -27,7 +28,9 @@ export function Root() {
       <TonConnectUIProvider
         manifestUrl={publicUrl('tonconnect-manifest.json')}
       >
-        <App/>
+        <AppRoot>
+          <App />
+        </AppRoot>
       </TonConnectUIProvider>
     </ErrorBoundary>
   );
