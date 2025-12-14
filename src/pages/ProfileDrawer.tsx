@@ -1,7 +1,6 @@
 import { X, MapPin, Briefcase, GraduationCap, ChevronLeft, ChevronRight, Music, Camera, Plane, Coffee } from 'lucide-react';
 import { useState } from 'react';
 import {
-  Button,
   Avatar,
   List,
   Section,
