@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { Button, IconButton } from '@telegram-apps/telegram-ui';
+import { motion } from 'framer-motion';
 import { Event, EventInformation, Attendee } from './EventInformation';
 
 interface EventDrawerProps {
@@ -11,7 +12,11 @@ interface EventDrawerProps {
 
 export function EventDrawer({ event, onClose, onLeave, onAttendeeClick }: EventDrawerProps) {
     return (
-        <div
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             style={{
                 position: 'fixed',
                 inset: 0,
@@ -19,12 +24,15 @@ export function EventDrawer({ event, onClose, onLeave, onAttendeeClick }: EventD
                 display: 'flex',
                 alignItems: 'flex-end',
                 justifyContent: 'center',
-                zIndex: 50,
-                animation: 'fade-in 0.2s ease-out'
+                zIndex: 50
             }}
             onClick={onClose}
         >
-            <div
+            <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
                 style={{
                     backgroundColor: 'var(--tgui--bg_color)',
                     borderTopLeftRadius: 24,
@@ -34,8 +42,7 @@ export function EventDrawer({ event, onClose, onLeave, onAttendeeClick }: EventD
                     height: '85vh',
                     display: 'flex',
                     flexDirection: 'column',
-                    overflow: 'hidden',
-                    animation: 'slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+                    overflow: 'hidden'
                 }}
                 onClick={(e) => e.stopPropagation()}
             >
@@ -78,7 +85,7 @@ export function EventDrawer({ event, onClose, onLeave, onAttendeeClick }: EventD
                         </p>
                     </div>
                 </div>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 }

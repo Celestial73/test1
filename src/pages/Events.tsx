@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { EventDrawer } from './EventDrawer';
 import { Event, Attendee } from './EventInformation';
 import { ProfileDrawer } from './ProfileDrawer';
@@ -128,33 +129,37 @@ export function Events() {
       </List>
 
       {/* Event Drawer */}
-      {selectedEvent && (
-        <EventDrawer
-          event={selectedEvent}
-          onClose={() => setSelectedEvent(null)}
-          onLeave={handleLeaveEvent}
-          onAttendeeClick={setSelectedAttendee}
-        />
-      )}
+      <AnimatePresence>
+        {selectedEvent && (
+          <EventDrawer
+            event={selectedEvent}
+            onClose={() => setSelectedEvent(null)}
+            onLeave={handleLeaveEvent}
+            onAttendeeClick={setSelectedAttendee}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Attendee Profile Drawer */}
-      {selectedAttendee && (
-        <ProfileDrawer
-          profile={{
-            name: selectedAttendee.name,
-            age: selectedAttendee.age,
-            location: selectedAttendee.location || 'New York, NY',
-            distance: selectedAttendee.distance || '5',
-            photos: selectedAttendee.photos || [selectedAttendee.image],
-            bio: selectedAttendee.bio,
-            work: selectedAttendee.work || '',
-            education: selectedAttendee.education || '',
-            interests: selectedAttendee.interests || [],
-            customFields: selectedAttendee.customFields || [],
-          }}
-          onClose={() => setSelectedAttendee(null)}
-        />
-      )}
+      <AnimatePresence>
+        {selectedAttendee && (
+          <ProfileDrawer
+            profile={{
+              name: selectedAttendee.name,
+              age: selectedAttendee.age,
+              location: selectedAttendee.location || 'New York, NY',
+              distance: selectedAttendee.distance || '5',
+              photos: selectedAttendee.photos || [selectedAttendee.image],
+              bio: selectedAttendee.bio,
+              work: selectedAttendee.work || '',
+              education: selectedAttendee.education || '',
+              interests: selectedAttendee.interests || [],
+              customFields: selectedAttendee.customFields || [],
+            }}
+            onClose={() => setSelectedAttendee(null)}
+          />
+        )}
+      </AnimatePresence>
     </Page>
   );
 }
