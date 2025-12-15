@@ -1,24 +1,39 @@
-import { Navigate, Route, Routes, HashRouter } from 'react-router-dom';
+import { useLocation, Navigate, Route, Routes } from 'react-router-dom';
 import { useLaunchParams, useSignal, miniApp } from '@tma.js/sdk-react';
 import { AppRoot } from '@telegram-apps/telegram-ui';
+import { AnimatePresence } from 'framer-motion';
 
 import { routes } from '@/navigation/routes.tsx';
+import { PageWrapper } from '@/components/PageWrapper.tsx';
 
 export function App() {
   const lp = useLaunchParams();
   const isDark = useSignal(miniApp.isDark);
+  const location = useLocation();
 
   return (
     <AppRoot
       appearance={isDark ? 'dark' : 'light'}
       platform={['macos', 'ios'].includes(lp.tgWebAppPlatform) ? 'ios' : 'base'}
     >
-      <HashRouter>
-        <Routes>
-          {routes.map((route) => <Route key={route.path} {...route} />)}
-          <Route path="*" element={<Navigate to="/"/>}/>
-        </Routes>
-      </HashRouter>
+      <div style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden' }}>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            {routes.map((route) => (
+              <Route
+                key={route.path}
+                path={route.path}
+                element={
+                  <PageWrapper>
+                    <route.Component />
+                  </PageWrapper>
+                }
+              />
+            ))}
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </AnimatePresence>
+      </div>
     </AppRoot>
   );
 }
