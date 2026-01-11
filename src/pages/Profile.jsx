@@ -21,10 +21,11 @@ import {
     Plus as PlusIcon,
     X as XIcon,
     Check,
-    Info
+    Info,
+    Pencil
 } from 'lucide-react';
 import useEmblaCarousel from 'embla-carousel-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 
 import { Page } from '@/components/Page.jsx';
 import { DisplayData } from '@/components/DisplayData/DisplayData.jsx';
@@ -34,11 +35,6 @@ import useAxiosPrivate from '@/hooks/useAxiosPrivate';
 export function Profile() {
     const [isEditing, setIsEditing] = useState(false);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-    const [showAddField, setShowAddField] = useState(false);
-    const [showAddInterest, setShowAddInterest] = useState(false);
-    const [newFieldName, setNewFieldName] = useState('');
-    const [newFieldValue, setNewFieldValue] = useState('');
-    const [newInterest, setNewInterest] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -97,6 +93,21 @@ export function Profile() {
         interests: [],
     });
     const [originalProfileData, setOriginalProfileData] = useState(null);
+    const bioTextareaRef = useRef(null);
+
+    // Auto-resize bio textarea
+    useEffect(() => {
+        if (bioTextareaRef.current && isEditing && profileData.showBio) {
+            // Use setTimeout to ensure DOM is fully updated after section restoration
+            const timer = setTimeout(() => {
+                if (bioTextareaRef.current) {
+                    bioTextareaRef.current.style.height = 'auto';
+                    bioTextareaRef.current.style.height = `${bioTextareaRef.current.scrollHeight}px`;
+                }
+            }, 0);
+            return () => clearTimeout(timer);
+        }
+    }, [profileData.bio, isEditing, profileData.showBio]);
 
     // Fetch profile data from backend on component mount
     useEffect(() => {
@@ -164,7 +175,6 @@ export function Profile() {
 
     const handleSave = async () => {
         try {
-            setLoading(true);
             setError(null);
             
             // Map profileData state to backend format
@@ -222,15 +232,11 @@ export function Profile() {
             }
             
             setIsEditing(false);
-            setShowAddField(false);
-            setShowAddInterest(false);
             setOriginalProfileData(null); // Clear original data after successful save
         } catch (err) {
             console.error('Error saving profile:', err);
             setError(err.response?.data?.message || err.message || 'Failed to save profile');
-        } finally {
-            setLoading(false);
-        }
+        } 
     };
 
     const handleCancel = () => {
@@ -240,8 +246,6 @@ export function Profile() {
             setOriginalProfileData(null);
         }
         setIsEditing(false);
-        setShowAddField(false);
-        setShowAddInterest(false);
     };
     
     const handleEditStart = () => {
@@ -256,23 +260,27 @@ export function Profile() {
     
     const restoreSection = (section) => {
         setProfileData({ ...profileData, [section]: true });
+        // Trigger resize for bio textarea if restoring bio section
+        if (section === 'showBio' && isEditing) {
+            setTimeout(() => {
+                if (bioTextareaRef.current) {
+                    bioTextareaRef.current.style.height = 'auto';
+                    bioTextareaRef.current.style.height = `${bioTextareaRef.current.scrollHeight}px`;
+                }
+            }, 10);
+        }
     };
 
     const addCustomField = () => {
-        if (newFieldName.trim() && newFieldValue.trim()) {
-            const newField = {
-                id: Date.now().toString(),
-                title: newFieldName,
-                value: newFieldValue,
-            };
-            setProfileData({
-                ...profileData,
-                customFields: [...profileData.customFields, newField],
-            });
-            setNewFieldName('');
-            setNewFieldValue('');
-            setShowAddField(false);
-        }
+        const newField = {
+            id: Date.now().toString(),
+            title: '',
+            value: '',
+        };
+        setProfileData({
+            ...profileData,
+            customFields: [...profileData.customFields, newField],
+        });
     };
 
     const deleteCustomField = (id) => {
@@ -292,14 +300,10 @@ export function Profile() {
     };
 
     const addInterest = () => {
-        if (newInterest.trim()) {
-            setProfileData({
-                ...profileData,
-                interests: [...profileData.interests, newInterest.trim()],
-            });
-            setNewInterest('');
-            setShowAddInterest(false);
-        }
+        setProfileData({
+            ...profileData,
+            interests: [...profileData.interests, ''],
+        });
     };
 
     const deleteInterest = (interestToDelete) => {
@@ -346,6 +350,89 @@ export function Profile() {
 
     return (
         <Page>
+            {/* Floating Action Buttons - Top Right Corner */}
+            <div style={{
+                position: 'fixed',
+                top: 16,
+                right: 16,
+                zIndex: 1000,
+                display: 'flex',
+                gap: 8,
+                alignItems: 'center'
+            }}>
+                {isEditing ? (
+                    <>
+                        {/* Red Cancel Button */}
+                        <button
+                            onClick={handleCancel}
+                            style={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: '50%',
+                                backgroundColor: '#ff3b30',
+                                border: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                                transition: 'transform 0.2s, box-shadow 0.2s'
+                            }}
+                            onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+                            onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                            <XIcon size={24} color="#fff" />
+                        </button>
+                        {/* Green Save Button */}
+                        <button
+                            onClick={handleSave}
+                            style={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: '50%',
+                                backgroundColor: '#34c759',
+                                border: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                                transition: 'transform 0.2s, box-shadow 0.2s'
+                            }}
+                            onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+                            onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                            <Check size={24} color="#fff" />
+                        </button>
+                    </>
+                ) : (
+                    /* Pen Icon Button */
+                    <button
+                        onClick={handleEditStart}
+                        style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--tgui--button_color, #3390ec)',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                            transition: 'transform 0.2s, box-shadow 0.2s'
+                        }}
+                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+                        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                        <Pencil size={20} color="#fff" />
+                    </button>
+                )}
+            </div>
+
             <List style={{ paddingBottom: '80px' }}>
                 {error && (
                     <Section>
@@ -407,64 +494,135 @@ export function Profile() {
                     </div>
 
                     <div style={{ padding: '0 20px 20px', textAlign: 'center' }}>
-                        {/* Existing Edit inputs moved here or kept below? 
-                             The original code had Avatar then Inputs/Text. 
-                             Let's keep the name/age inputs here.
-                             The style={{ padding: 20, textAlign: 'center' }} was on the parent div which we removed/changed.
-                             So we add a container for the rest of the header content.
-                          */}
-                        {isEditing ? (
-                            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 10 }}>
-                                <Input
-                                    header="Name"
-                                    value={profileData.name}
-                                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                                />
-                                <Input
-                                    header="Age"
-                                    value={profileData.age}
-                                    onChange={(e) => setProfileData({ ...profileData, age: e.target.value })}
-                                />
-                            </div>
-                        ) : (
-                            <div style={{ fontSize: 24, fontWeight: 'bold' }}>
-                                {profileData.name}, {profileData.age}
-                            </div>
-                        )}
-
-                    </div>
-
-                    <Cell
-                        before={isEditing ? <XIcon size={20} /> : <Camera size={20} />}
-                        after={
-                            isEditing ? (
-                                <Button size="s" onClick={handleSave} mode="filled" before={<Check size={16} />}>Save</Button>
+                        <div style={{ fontSize: '24px', fontWeight: '600', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', color: 'var(--tgui--text_color, inherit)', lineHeight: '1.4', display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+                            {isEditing ? (
+                                <>
+                                    <input
+                                        type="text"
+                                        value={profileData.name}
+                                        onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                                        style={{
+                                            fontSize: '24px',
+                                            fontWeight: '600',
+                                            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            borderBottom: '2px solid var(--tgui--hint_color, #999)',
+                                            outline: 'none',
+                                            textAlign: 'center',
+                                            color: 'var(--tgui--text_color, inherit)',
+                                            padding: '0 4px',
+                                            display: 'inline-block',
+                                            minWidth: '60px',
+                                            width: 'auto',
+                                            lineHeight: '1.4'
+                                        }}
+                                        placeholder="Name"
+                                    />
+                                    <span>,</span>
+                                    <input
+                                        type="text"
+                                        value={profileData.age}
+                                        onChange={(e) => setProfileData({ ...profileData, age: e.target.value })}
+                                        style={{
+                                            fontSize: '24px',
+                                            fontWeight: '600',
+                                            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            borderBottom: '2px solid var(--tgui--hint_color, #999)',
+                                            outline: 'none',
+                                            textAlign: 'center',
+                                            color: 'var(--tgui--text_color, inherit)',
+                                            padding: '0 4px',
+                                            display: 'inline-block',
+                                            minWidth: '30px',
+                                            width: 'auto',
+                                            lineHeight: '1.4'
+                                        }}
+                                        placeholder="Age"
+                                    />
+                                </>
                             ) : (
-                                <Button size="s" onClick={handleEditStart} mode="bezeled">Edit Profile</Button>
-                            )
-                        }
-                        onClick={isEditing ? handleCancel : () => { }}
-                    >
-                        {isEditing ? 'Cancel Editing' : 'Viewer Mode'}
-                    </Cell>
+                                <>
+                                    {profileData.name || 'Name'}, {profileData.age || 'Age'}
+                                </>
+                            )}
+                        </div>
+                    </div>
                 </Section>
 
                 {/* Bio Section */}
                 {profileData.showBio && (
-                    <Section header="About">
+                    <Section header={
+                        <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between', 
+                            width: '100%',
+                        }}>
+                            <span style={{ 
+                                fontSize: 'var(--tgui--section_header_font_size, 14px)',
+                                fontWeight: 'var(--tgui--section_header_font_weight, 500)',
+                                color: 'var(--tgui--section_header_text_color, var(--tgui--hint_color))',
+                                lineHeight: 'var(--tgui--section_header_line_height, 1.5)',
+                                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                marginLeft: '20px'
+                            }}>About</span>
+                            {isEditing && (
+                                <IconButton mode="plain" onClick={() => deleteSection('showBio')} style={{ marginRight: '20px' }}>
+                                    <Trash2 size={16} />
+                                </IconButton>
+                            )}
+                        </div>
+                    }>
                         {isEditing ? (
-                            <Textarea
-                                placeholder="Tell people about yourself..."
-                                value={profileData.bio}
-                                onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-                            />
+                            <div style={{ 
+                                padding: '12px 20px',
+                                minHeight: '10px'
+                            }}>
+                                <textarea
+                                    ref={bioTextareaRef}
+                                    value={profileData.bio}
+                                    onChange={(e) => {
+                                        setProfileData({ ...profileData, bio: e.target.value });
+                                        // Auto-resize on change
+                                        if (bioTextareaRef.current) {
+                                            bioTextareaRef.current.style.height = 'auto';
+                                            bioTextareaRef.current.style.height = `${bioTextareaRef.current.scrollHeight}px`;
+                                        }
+                                    }}
+                                    placeholder="Tell people about yourself..."
+                                    style={{
+                                        width: '100%',
+                                        minHeight: '20px',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        borderBottom: '2px solid var(--tgui--hint_color, #999)',
+                                        outline: 'none',
+                                        color: 'var(--tgui--text_color, inherit)',
+                                        fontSize: '16px',
+                                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                        padding: '4px 0',
+                                        resize: 'none',
+                                        overflow: 'hidden',
+                                        cursor: 'text',
+                                        lineHeight: '1.5'
+                                    }}
+                                />
+                            </div>
                         ) : (
-                            <Cell multiline>{profileData.bio}</Cell>
-                        )}
-                        {isEditing && (
-                            <Button mode="plain" size="s" onClick={() => deleteSection('showBio')}>
-                                <Trash2 size={16} /> Remove Section
-                            </Button>
+                            <div style={{ 
+                                padding: '12px 20px',
+                                whiteSpace: 'pre-wrap',
+                                wordWrap: 'break-word',
+                                lineHeight: '1.5',
+                                fontSize: '16px',
+                                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                color: 'var(--tgui--text_color, inherit)'
+                            }}>
+                                {profileData.bio || <span style={{ opacity: 0.5 }}>Tell people about yourself...</span>}
+                            </div>
                         )}
                     </Section>
                 )}
@@ -473,62 +631,174 @@ export function Profile() {
                 <Section header="Details">
                     {/* Custom Fields */}
                     {profileData.customFields.map((field) => (
-                        <Cell
-                            key={field.id}
-                            before={<Avatar size={28} style={{ background: 'var(--tgui--secondary_bg_color)' }}><Info size={16} /></Avatar>}
-                            description={isEditing ? 'Custom Field' : field.title}
-                            after={isEditing && <IconButton mode="plain" onClick={() => deleteCustomField(field.id)}><Trash2 size={16} /></IconButton>}
-                        >
-                            {isEditing ? (
-                                <div style={{ display: 'flex', gap: 5 }}>
-                                    <Input
-                                        placeholder="Title"
+                        isEditing ? (
+                            <div
+                                key={field.id}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    padding: '12px 20px',
+                                    gap: '12px'
+                                }}
+                            >
+                                <Avatar size={28} style={{ background: 'var(--tgui--secondary_bg_color)', flexShrink: 0 }}><Info size={16} /></Avatar>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <input
+                                        type="text"
                                         value={field.title || ''}
                                         onChange={(e) => updateCustomField(field.id, 'title', e.target.value)}
+                                        placeholder="Field Title"
+                                        style={{
+                                            background: 'transparent',
+                                            border: 'none',
+                                            borderBottom: '2px solid var(--tgui--hint_color, #999)',
+                                            outline: 'none',
+                                            color: 'var(--tgui--hint_color, #999)',
+                                            fontSize: '14px',
+                                            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                            padding: '2px 4px',
+                                            display: 'inline-block',
+                                            minWidth: '80px',
+                                            width: 'auto',
+                                            cursor: 'text',
+                                            lineHeight: '1.5'
+                                        }}
                                     />
-                                    <Input
-                                        placeholder="Value"
+                                    <input
+                                        type="text"
                                         value={field.value || ''}
                                         onChange={(e) => updateCustomField(field.id, 'value', e.target.value)}
+                                        placeholder="Field Value"
+                                        style={{
+                                            background: 'transparent',
+                                            border: 'none',
+                                            borderBottom: '2px solid var(--tgui--hint_color, #999)',
+                                            outline: 'none',
+                                            color: 'var(--tgui--text_color, inherit)',
+                                            fontSize: '16px',
+                                            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                            padding: '2px 4px',
+                                            display: 'inline-block',
+                                            minWidth: '80px',
+                                            width: 'auto',
+                                            cursor: 'text',
+                                            lineHeight: '1.5'
+                                        }}
                                     />
                                 </div>
-                            ) : (
-                                field.value
-                            )}
-                        </Cell>
+                                <IconButton mode="plain" onClick={() => deleteCustomField(field.id)} style={{ flexShrink: 0 }}><Trash2 size={16} /></IconButton>
+                            </div>
+                        ) : (
+                            <Cell
+                                key={field.id}
+                                before={<Avatar size={28} style={{ background: 'var(--tgui--secondary_bg_color)' }}><Info size={16} /></Avatar>}
+                                description={field.title}
+                            >
+                                {field.value}
+                            </Cell>
+                        )
                     ))}
 
                     {/* Add Custom Field */}
                     {isEditing && (
-                        <Cell>
-                            {showAddField ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
-                                    <Input
-                                        placeholder="Field Name"
-                                        value={newFieldName}
-                                        onChange={(e) => setNewFieldName(e.target.value)}
-                                    />
-                                    <Input
-                                        placeholder="Field Value"
-                                        value={newFieldValue}
-                                        onChange={(e) => setNewFieldValue(e.target.value)}
-                                    />
-                                    <div style={{ display: 'flex', gap: 10 }}>
-                                        <Button size="s" onClick={addCustomField}>Add</Button>
-                                        <Button size="s" mode="gray" onClick={() => setShowAddField(false)}>Cancel</Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <Button mode="plain" size="s" onClick={() => setShowAddField(true)}>
-                                    <PlusIcon size={16} style={{ marginRight: 5 }} /> Add Custom Field
-                                </Button>
-                            )}
-                        </Cell>
+                        <div style={{ padding: '12px 20px' }}>
+                            <Button mode="plain" size="s" onClick={addCustomField}>
+                                <PlusIcon size={16} style={{ marginRight: 5 }} /> Add Custom Field
+                            </Button>
+                        </div>
                     )}
                 </Section>
 
+                {/* Interests Section */}
+                {profileData.showInterests && (
+                    <Section header={
+                        <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between', 
+                            width: '100%',
+                            padding: '0 20px'
+                        }}>
+                            <span style={{ 
+                                fontSize: 'var(--tgui--section_header_font_size, 14px)',
+                                fontWeight: 'var(--tgui--section_header_font_weight, 500)',
+                                color: 'var(--tgui--section_header_text_color, var(--tgui--hint_color))',
+                                lineHeight: 'var(--tgui--section_header_line_height, 1.5)',
+                                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                            }}>Interests</span>
+                            {isEditing && (
+                                <IconButton mode="plain" onClick={() => deleteSection('showInterests')}>
+                                    <Trash2 size={16} />
+                                </IconButton>
+                            )}
+                        </div>
+                    }>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '0 20px 20px' }}>
+                            {profileData.interests.map((interest, index) => (
+                                <div
+                                    key={index}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        padding: '6px 12px',
+                                        background: 'var(--tgui--secondary_bg_color)',
+                                        borderRadius: 16,
+                                        fontSize: '16px',
+                                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                        color: 'var(--tgui--text_color, inherit)',
+                                        lineHeight: '1.5'
+                                    }}
+                                >
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={interest}
+                                            onChange={(e) => {
+                                                const newInterests = [...profileData.interests];
+                                                newInterests[index] = e.target.value;
+                                                setProfileData({ ...profileData, interests: newInterests });
+                                            }}
+                                            style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                borderBottom: '2px solid var(--tgui--hint_color, #999)',
+                                                outline: 'none',
+                                                color: 'var(--tgui--text_color, inherit)',
+                                                fontSize: '16px',
+                                                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                                padding: '0 2px',
+                                                display: 'inline-block',
+                                                minWidth: '40px',
+                                                width: 'auto',
+                                                maxWidth: '200px',
+                                                lineHeight: '1.5'
+                                            }}
+                                        />
+                                    ) : (
+                                        interest
+                                    )}
+                                    {isEditing && (
+                                        <XIcon
+                                            size={14}
+                                            style={{ cursor: 'pointer', opacity: 0.6 }}
+                                            onClick={() => deleteInterest(interest)}
+                                        />
+                                    )}
+                                </div>
+                            ))}
+
+                            {isEditing && (
+                                <Button mode="bezeled" size="s" onClick={addInterest} style={{ borderRadius: 16 }}>
+                                    <PlusIcon size={14} /> Add
+                                </Button>
+                            )}
+                        </div>
+                    </Section>
+                )}
+
                 {/* Hidden Sections - Show in editing mode to allow restoration */}
-                {isEditing && (
+                {isEditing && (!profileData.showBio || !profileData.showInterests) && (
                     <Section header="Hidden Sections">
                         {!profileData.showBio && (
                             <Cell
@@ -555,60 +825,6 @@ export function Profile() {
                             >
                                 Interests
                             </Cell>
-                        )}
-                    </Section>
-                )}
-
-                {/* Interests Section */}
-                {profileData.showInterests && (
-                    <Section header="Interests">
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '0 20px 20px' }}>
-                            {profileData.interests.map((interest, index) => (
-                                <div
-                                    key={index}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 6,
-                                        padding: '6px 12px',
-                                        background: 'var(--tgui--secondary_bg_color)',
-                                        borderRadius: 16,
-                                        fontSize: 14
-                                    }}
-                                >
-                                    {interest}
-                                    {isEditing && (
-                                        <XIcon
-                                            size={14}
-                                            style={{ cursor: 'pointer', opacity: 0.6 }}
-                                            onClick={() => deleteInterest(interest)}
-                                        />
-                                    )}
-                                </div>
-                            ))}
-
-                            {isEditing && (
-                                showAddInterest ? (
-                                    <div style={{ display: 'flex', gap: 5, width: '100%', marginTop: 10 }}>
-                                        <Input
-                                            placeholder="Interest"
-                                            value={newInterest}
-                                            onChange={(e) => setNewInterest(e.target.value)}
-                                        />
-                                        <Button size="s" onClick={addInterest}>Add</Button>
-                                        <Button size="s" mode="gray" onClick={() => setShowAddInterest(false)}>Cancel</Button>
-                                    </div>
-                                ) : (
-                                    <Button mode="bezeled" size="s" onClick={() => setShowAddInterest(true)} style={{ borderRadius: 16 }}>
-                                        <PlusIcon size={14} /> Add
-                                    </Button>
-                                )
-                            )}
-                        </div>
-                        {isEditing && (
-                            <Button mode="plain" size="s" onClick={() => deleteSection('showInterests')}>
-                                <Trash2 size={16} /> Remove Section
-                            </Button>
                         )}
                     </Section>
                 )}
