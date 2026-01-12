@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Use environment variable with fallback for development
-const BASE_URL = 'https://76f9de5c1532.ngrok-free.app/v1';
+const BASE_URL = 'https://d15b29b14139.ngrok-free.app/v1';
 
 export default axios.create({
     baseURL: BASE_URL
