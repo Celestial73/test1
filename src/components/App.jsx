@@ -23,6 +23,7 @@ export function App() {
         <Route element={<Login />}>
           {/* Routes with MainLayout (includes BottomNav) */}
           <Route element={<MainLayout />}>
+            <Route path="/" element={<Navigate to="/profile" replace />} />
             {mainLayoutRoutes.map((route) => (
               <Route
                 key={route.path}
@@ -43,7 +44,7 @@ export function App() {
             ))}
           </Route>
 
-          <Route path="*" element={<Navigate to="/profile" />} />
+          <Route path="*" element={<Navigate to="/profile" replace />} />
         </Route>
       </Routes>
     </AppRoot>

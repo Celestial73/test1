@@ -7,7 +7,6 @@ import { Feed } from '@/pages/Feed.jsx';
 import { Events } from '@/pages/Events.jsx';
 
 export const routes = [
-  { path: '/', Component: IndexPage },
   { path: '/feed', Component: Feed, title: 'Feed', useMainLayout: true },
   { path: '/events', Component: Events, title: 'Events', useMainLayout: true },
   { path: '/profile', Component: Profile, title: 'Profile', useMainLayout: true },
