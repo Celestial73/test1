@@ -17,6 +17,7 @@
   "dependencies": {
     "@telegram-apps/telegram-ui": "^2.1.9",
     "@tma.js/sdk-react": "^3.0.8",
+    "axios": "^1.6.0",
     "embla-carousel-react": "^8.6.0",
     "eruda": "^3.4.3",
     "framer-motion": "^12.23.26",
