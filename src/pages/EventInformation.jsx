@@ -54,18 +54,24 @@ export function EventInformation({
 
                             {/* Dense Meta Info (Date, Time, Location) */}
                             <div style={{ padding: '0 16px', marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--tgui--secondary_bg_color)', padding: '6px 12px', borderRadius: 12, fontSize: 13, fontWeight: 500 }}>
-                                    <Calendar size={16} className="text-pink-500" />
-                                    <span>{event.date}</span>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--tgui--secondary_bg_color)', padding: '6px 12px', borderRadius: 12, fontSize: 13, fontWeight: 500 }}>
-                                    <Clock size={16} className="text-pink-500" />
-                                    <span>{event.time}</span>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--tgui--secondary_bg_color)', padding: '6px 12px', borderRadius: 12, fontSize: 13, fontWeight: 500, maxWidth: '100%' }}>
-                                    <MapPin size={16} className="text-pink-500 shrink-0" />
-                                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{event.location}</span>
-                                </div>
+                                {event.date && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--tgui--secondary_bg_color)', padding: '6px 12px', borderRadius: 12, fontSize: 13, fontWeight: 500 }}>
+                                        <Calendar size={16} className="text-pink-500" />
+                                        <span>{event.date}</span>
+                                    </div>
+                                )}
+                                {event.time && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--tgui--secondary_bg_color)', padding: '6px 12px', borderRadius: 12, fontSize: 13, fontWeight: 500 }}>
+                                        <Clock size={16} className="text-pink-500" />
+                                        <span>{event.time}</span>
+                                    </div>
+                                )}
+                                {event.location && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--tgui--secondary_bg_color)', padding: '6px 12px', borderRadius: 12, fontSize: 13, fontWeight: 500, maxWidth: '100%' }}>
+                                        <MapPin size={16} className="text-pink-500 shrink-0" />
+                                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{event.location}</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Attendees - Compact Footer */}
@@ -100,25 +106,31 @@ export function EventInformation({
         <div className={className}>
             <List>
                 <Section header={event.title}>
-                    <Cell
-                        before={<Calendar size={20} style={{ color: 'var(--tgui--link_color)' }} />}
-                        description="Date"
-                    >
-                        {event.date}
-                    </Cell>
-                    <Cell
-                        before={<Clock size={20} style={{ color: 'var(--tgui--link_color)' }} />}
-                        description="Time"
-                    >
-                        {event.time}
-                    </Cell>
-                    <Cell
-                        before={<MapPin size={20} style={{ color: 'var(--tgui--link_color)' }} />}
-                        description="Location"
-                        multiline
-                    >
-                        {event.location}
-                    </Cell>
+                    {event.date && (
+                        <Cell
+                            before={<Calendar size={20} style={{ color: 'var(--tgui--link_color)' }} />}
+                            description="Date"
+                        >
+                            {event.date}
+                        </Cell>
+                    )}
+                    {event.time && (
+                        <Cell
+                            before={<Clock size={20} style={{ color: 'var(--tgui--link_color)' }} />}
+                            description="Time"
+                        >
+                            {event.time}
+                        </Cell>
+                    )}
+                    {event.location && (
+                        <Cell
+                            before={<MapPin size={20} style={{ color: 'var(--tgui--link_color)' }} />}
+                            description="Location"
+                            multiline
+                        >
+                            {event.location}
+                        </Cell>
+                    )}
 
                     <Cell
                         before={<Users size={20} style={{ color: 'var(--tgui--link_color)' }} />}

@@ -1,9 +1,11 @@
 import { Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { EventDrawer } from './EventDrawer.jsx';
 import { ProfileDrawer } from './ProfileDrawer.jsx';
 import { Page } from '@/components/Page.jsx';
+import useAxiosPrivate from '@/hooks/useAxiosPrivate';
 import {
   List,
   Section,
@@ -11,20 +13,6 @@ import {
   Button,
   Avatar
 } from '@telegram-apps/telegram-ui';
-
-// ... (keep data the same)
-const myEvents = [
-  {
-    id: 1,
-    title: "Board Game Night",
-    date: "Friday, Dec 22",
-    time: "7:00 PM",
-    location: "The Dice & Cup",
-    attendees: [],
-    maxAttendees: 6,
-    image: "https://images.unsplash.com/photo-1632501641765-e568d28b0015?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxib2FyZCUyMGdhbWVzfGVufDF8fHx8MTc2NTY1NjAxNXww&ixlib=rb-4.1.0&q=80&w=1080",
-  }
-];
 
 const initialAcceptedRequests = [
   {
@@ -58,15 +46,73 @@ const initialAcceptedRequests = [
   }
 ];
 
+// Helper function to transform API event to UI format
+const transformEvent = (apiEvent) => {
+  return {
+    id: apiEvent.id || apiEvent._id,
+    title: apiEvent.title,
+    date: apiEvent.starts_at || '', // Use starts_at as-is for date
+    time: '', // No separate time field needed
+    location: apiEvent.location,
+    description: apiEvent.description,
+    attendees: apiEvent.participants || apiEvent.attendees || [],
+    maxAttendees: apiEvent.capacity,
+    image: apiEvent.image || apiEvent.imageUrl || apiEvent.creator_profile?.photo_url || null,
+    starts_at: apiEvent.starts_at, // Keep original string
+    creator_profile: apiEvent.creator_profile, // Keep creator info in case it's needed
+  };
+};
+
 export function Events() {
+  const navigate = useNavigate();
+  const axiosPrivate = useAxiosPrivate();
+  const [myEvents, setMyEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [acceptedRequests, setAcceptedRequests] = useState(initialAcceptedRequests);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [selectedAttendee, setSelectedAttendee] = useState(null);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await axiosPrivate.get('/events/me');
+        const events = response.data.results || response.data || [];
+        setMyEvents(events.map(transformEvent));
+      } catch (err) {
+        console.error('Error fetching events:', err);
+        setError(err.response?.data?.message || err.message || 'Failed to load events');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, [axiosPrivate]);
 
   const handleLeaveEvent = (eventId) => {
     // In a real app, this would make an API call
     setAcceptedRequests((prev) => prev.filter((e) => e.id !== eventId));
     setSelectedEvent(null);
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    try {
+      await axiosPrivate.delete(`/events/me/${eventId}`);
+      // Remove the event from the list
+      setMyEvents((prev) => prev.filter((e) => e.id !== eventId));
+      setSelectedEvent(null);
+      // Optionally refetch events to ensure consistency
+      const response = await axiosPrivate.get('/events/me');
+      const events = response.data.results || response.data || [];
+      setMyEvents(events.map(transformEvent));
+    } catch (err) {
+      console.error('Error deleting event:', err);
+      // You might want to show an error message to the user here
+      alert(err.response?.data?.message || err.message || 'Failed to delete event');
+    }
   };
 
   return (
@@ -77,16 +123,32 @@ export function Events() {
           header={
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>My Events</span>
-              <Button mode="plain" size="s" before={<Plus size={16} />}>Create</Button>
+              <Button 
+                mode="plain" 
+                size="s" 
+                before={<Plus size={16} />}
+                onClick={() => navigate('/events/create')}
+              >
+                Create
+              </Button>
             </div>
           }
         >
-          {myEvents.length > 0 ? (
+          {loading ? (
+            <div style={{ padding: 20, textAlign: 'center', opacity: 0.5 }}>
+              Loading events...
+            </div>
+          ) : error ? (
+            <div style={{ padding: 20, textAlign: 'center', color: 'var(--tgui--destructive_text_color)' }}>
+              {error}
+            </div>
+          ) : myEvents.length > 0 ? (
             myEvents.map((event) => (
               <Cell
                 key={event.id}
+                onClick={() => setSelectedEvent(event)}
                 before={<Avatar src={event.image} size={48} />}
-                description={`${event.date} • ${event.time}`}
+                description={event.date || event.starts_at || ''}
                 after={
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: 12, opacity: 0.6 }}>
                     <span>{event.attendees?.length || 0}/{event.maxAttendees}</span>
@@ -134,6 +196,8 @@ export function Events() {
             event={selectedEvent}
             onClose={() => setSelectedEvent(null)}
             onLeave={handleLeaveEvent}
+            onDelete={handleDeleteEvent}
+            isOwner={myEvents.some(e => e.id === selectedEvent.id)}
             onAttendeeClick={setSelectedAttendee}
           />
         )}

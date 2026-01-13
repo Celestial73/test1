@@ -12,7 +12,8 @@ export function PageWrapper({ children }) {
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                backgroundColor: 'var(--tgui--bg_color)'
+                backgroundColor: 'var(--tgui--bg_color)',
+                paddingBottom: '80px'
             }}
         >
             {children}

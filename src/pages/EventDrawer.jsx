@@ -3,7 +3,7 @@ import { Button, IconButton } from '@telegram-apps/telegram-ui';
 import { motion } from 'framer-motion';
 import { EventInformation } from './EventInformation.jsx';
 
-export function EventDrawer({ event, onClose, onLeave, onAttendeeClick }) {
+export function EventDrawer({ event, onClose, onLeave, onDelete, isOwner = false, onAttendeeClick }) {
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -64,18 +64,37 @@ export function EventDrawer({ event, onClose, onLeave, onAttendeeClick }) {
                     />
 
                     <div style={{ padding: '0 20px 24px', marginTop: 16 }}>
-                        <Button
-                            mode="bezeled"
-                            size="l"
-                            stretched
-                            onClick={() => onLeave(event.id)}
-                            style={{ color: 'var(--tgui--destructive_text_color)' }}
-                        >
-                            Leave Event
-                        </Button>
-                        <p style={{ textAlign: 'center', fontSize: 13, marginTop: 8, color: 'var(--tgui--hint_color)' }}>
-                            You will be removed from the attendee list.
-                        </p>
+                        {isOwner ? (
+                            <>
+                                <Button
+                                    mode="bezeled"
+                                    size="l"
+                                    stretched
+                                    onClick={() => onDelete(event.id)}
+                                    style={{ color: 'var(--tgui--destructive_text_color)' }}
+                                >
+                                    Delete Event
+                                </Button>
+                                <p style={{ textAlign: 'center', fontSize: 13, marginTop: 8, color: 'var(--tgui--hint_color)' }}>
+                                    This action cannot be undone.
+                                </p>
+                            </>
+                        ) : (
+                            <>
+                                <Button
+                                    mode="bezeled"
+                                    size="l"
+                                    stretched
+                                    onClick={() => onLeave(event.id)}
+                                    style={{ color: 'var(--tgui--destructive_text_color)' }}
+                                >
+                                    Leave Event
+                                </Button>
+                                <p style={{ textAlign: 'center', fontSize: 13, marginTop: 8, color: 'var(--tgui--hint_color)' }}>
+                                    You will be removed from the attendee list.
+                                </p>
+                            </>
+                        )}
                     </div>
                 </div>
             </motion.div>

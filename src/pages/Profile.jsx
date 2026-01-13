@@ -432,7 +432,7 @@ export function Profile() {
                 )}
             </div>
 
-            <List style={{ paddingBottom: '80px' }}>
+            <List style={{ paddingBottom: '' }}>
                 {error && (
                     <Section>
                         <Cell>
