@@ -170,7 +170,6 @@ export function Profile() {
         } else {
             setLoading(false);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [auth?.initData]); // Re-fetch if initData changes (axiosPrivate is stable)
 
     const handleSave = async () => {
