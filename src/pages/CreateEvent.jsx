@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   List,
   Section,
@@ -14,8 +14,11 @@ import useAuth from '@/hooks/useAuth';
 
 export function CreateEvent() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const axiosPrivate = useAxiosPrivate();
   const { auth } = useAuth();
+  const isEditMode = Boolean(id);
+  
   const [formData, setFormData] = useState({
     title: '',
     date: '',
@@ -26,7 +29,57 @@ export function CreateEvent() {
     image: '',
   });
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(isEditMode);
   const [error, setError] = useState(null);
+
+  // Fetch event data on mount if in edit mode
+  useEffect(() => {
+    const fetchEvent = async () => {
+      if (!isEditMode) return;
+      
+      try {
+        setFetching(true);
+        setError(null);
+        const response = await axiosPrivate.get(`/events/${id}`);
+        const event = response.data;
+
+        // Parse starts_at to extract date and time
+        // Format is expected to be like "Saturday, Dec 23, 8:30 AM" or similar
+        let date = '';
+        let time = '';
+        if (event.starts_at) {
+          // Try to parse the starts_at string
+          // If it contains a comma, split it
+          const parts = event.starts_at.split(',').map(p => p.trim());
+          if (parts.length >= 2) {
+            // First part(s) are date, last part is time
+            date = parts.slice(0, -1).join(', ');
+            time = parts[parts.length - 1];
+          } else {
+            // If no comma, use the whole string as date
+            date = event.starts_at;
+          }
+        }
+
+        setFormData({
+          title: event.title || '',
+          date: date,
+          time: time,
+          location: event.location || '',
+          maxAttendees: event.capacity?.toString() || '',
+          description: event.description || '',
+          image: event.image || event.imageUrl || '',
+        });
+      } catch (err) {
+        console.error('Error fetching event:', err);
+        setError(err.response?.data?.message || err.message || 'Failed to load event');
+      } finally {
+        setFetching(false);
+      }
+    };
+
+    fetchEvent();
+  }, [id, isEditMode, axiosPrivate]);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -77,20 +130,35 @@ export function CreateEvent() {
         payload.description = formData.description.trim();
       }
 
-      console.log('Creating event with payload:', payload);
-
-      const response = await axiosPrivate.post('/events/me', payload);
-      
-      console.log('Event created successfully:', response.data);
+      let response;
+      if (isEditMode) {
+        console.log('Updating event with payload:', payload);
+        response = await axiosPrivate.patch(`/events/${id}`, payload);
+        console.log('Event updated successfully:', response.data);
+      } else {
+        console.log('Creating event with payload:', payload);
+        response = await axiosPrivate.post('/events/me', payload);
+        console.log('Event created successfully:', response.data);
+      }
       
       navigate('/events');
     } catch (err) {
-      console.error('Error creating event:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to create event');
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} event:`, err);
+      setError(err.response?.data?.message || err.message || `Failed to ${isEditMode ? 'update' : 'create'} event`);
     } finally {
       setLoading(false);
     }
   };
+
+  if (fetching) {
+    return (
+      <Page>
+        <div style={{ padding: 20, textAlign: 'center', opacity: 0.5 }}>
+          Loading event...
+        </div>
+      </Page>
+    );
+  }
 
   return (
     <Page>
@@ -269,7 +337,7 @@ export function CreateEvent() {
                 onClick={handleSubmit}
                 disabled={loading}
               >
-                {loading ? 'Creating...' : 'Create Event'}
+                {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Event' : 'Create Event')}
               </Button>
             </div>
           </Section>

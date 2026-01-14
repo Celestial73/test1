@@ -12,6 +12,7 @@ export const routes = [
   { path: '/events', Component: Events, title: 'Events', useMainLayout: true },
   { path: '/profile', Component: Profile, title: 'Profile', useMainLayout: true },
   { path: '/events/create', Component: CreateEvent, title: 'Create Event' },
+  { path: '/events/edit/:id', Component: CreateEvent, title: 'Edit Event' },
   { path: '/init-data', Component: InitDataPage, title: 'Init Data' },
   { path: '/theme-params', Component: ThemeParamsPage, title: 'Theme Params' },
   { path: '/launch-params', Component: LaunchParamsPage, title: 'Launch Params' },

@@ -115,6 +115,44 @@ export function Events() {
     }
   };
 
+  const handleEditEvent = (eventId) => {
+    navigate(`/events/edit/${eventId}`);
+  };
+
+  const handleDeleteParticipant = async (eventId, participantId) => {
+    try {
+      await axiosPrivate.delete(`/events/me/${eventId}/participants/${participantId}`);
+      
+      // Update the event in the list to remove the participant
+      setMyEvents((prev) => 
+        prev.map((event) => {
+          if (event.id === eventId) {
+            return {
+              ...event,
+              attendees: event.attendees?.filter(
+                (attendee) => (attendee.id || attendee.user) !== participantId
+              ) || []
+            };
+          }
+          return event;
+        })
+      );
+      
+      // Update selectedEvent if it's the same event
+      if (selectedEvent && selectedEvent.id === eventId) {
+        setSelectedEvent((prev) => ({
+          ...prev,
+          attendees: prev.attendees?.filter(
+            (attendee) => (attendee.id || attendee.user) !== participantId
+          ) || []
+        }));
+      }
+    } catch (err) {
+      console.error('Error deleting participant:', err);
+      alert(err.response?.data?.message || err.message || 'Failed to remove participant');
+    }
+  };
+
   return (
     <Page>
       <List>
@@ -197,6 +235,8 @@ export function Events() {
             onClose={() => setSelectedEvent(null)}
             onLeave={handleLeaveEvent}
             onDelete={handleDeleteEvent}
+            onEdit={handleEditEvent}
+            onDeleteParticipant={handleDeleteParticipant}
             isOwner={myEvents.some(e => e.id === selectedEvent.id)}
             onAttendeeClick={setSelectedAttendee}
           />
@@ -207,18 +247,7 @@ export function Events() {
       <AnimatePresence>
         {selectedAttendee && (
           <ProfileDrawer
-            profile={{
-              name: selectedAttendee.name,
-              age: selectedAttendee.age,
-              location: selectedAttendee.location || 'New York, NY',
-              distance: selectedAttendee.distance || '5',
-              photos: selectedAttendee.photos || [selectedAttendee.image],
-              bio: selectedAttendee.bio,
-              work: selectedAttendee.work || '',
-              education: selectedAttendee.education || '',
-              interests: selectedAttendee.interests || [],
-              customFields: selectedAttendee.customFields || [],
-            }}
+            profile={selectedAttendee}
             onClose={() => setSelectedAttendee(null)}
           />
         )}

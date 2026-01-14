@@ -3,7 +3,7 @@ import { Button, IconButton } from '@telegram-apps/telegram-ui';
 import { motion } from 'framer-motion';
 import { EventInformation } from './EventInformation.jsx';
 
-export function EventDrawer({ event, onClose, onLeave, onDelete, isOwner = false, onAttendeeClick }) {
+export function EventDrawer({ event, onClose, onLeave, onDelete, onEdit, onDeleteParticipant, isOwner = false, onAttendeeClick }) {
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -61,11 +61,25 @@ export function EventDrawer({ event, onClose, onLeave, onDelete, isOwner = false
                     <EventInformation
                         event={event}
                         onAttendeeClick={onAttendeeClick}
+                        onDeleteParticipant={onDeleteParticipant}
+                        isOwner={isOwner}
                     />
 
                     <div style={{ padding: '0 20px 24px', marginTop: 16 }}>
                         {isOwner ? (
                             <>
+                                <Button
+                                    mode="filled"
+                                    size="l"
+                                    stretched
+                                    onClick={() => {
+                                        onClose();
+                                        onEdit?.(event.id);
+                                    }}
+                                    style={{ marginBottom: 12 }}
+                                >
+                                    Edit Event
+                                </Button>
                                 <Button
                                     mode="bezeled"
                                     size="l"

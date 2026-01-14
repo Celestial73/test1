@@ -1,9 +1,10 @@
-import { Calendar, Clock, MapPin, Users } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, X } from "lucide-react";
 import {
     Avatar,
     Cell,
     List,
     Section,
+    IconButton,
 } from '@telegram-apps/telegram-ui';
 
 export function EventInformation({
@@ -11,10 +12,20 @@ export function EventInformation({
     showDescription = true,
     className = "",
     onAttendeeClick,
+    onDeleteParticipant,
+    isOwner = false,
     variant = 'default',
 }) {
     const attendeesCount = event.attendees?.length ?? event.maxAttendees ?? 0;
     const canClickAttendees = Boolean(onAttendeeClick);
+    
+    // Helper function to check if a participant is the event creator
+    const isCreator = (participant) => {
+        if (!event.creator_profile) return false;
+        const creatorId = event.creator_profile.id || event.creator_profile.user_id || event.creator_profile.user;
+        const participantId = participant.id || participant.user_id || participant.user;
+        return creatorId && participantId && creatorId === participantId;
+    };
 
     if (variant === 'card') {
         return (
@@ -80,19 +91,58 @@ export function EventInformation({
                                     Going ({attendeesCount})
                                 </div>
                                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 mask-linear-fade" style={{ display: 'flex', overflowX: 'auto' }}>
-                                    {event.attendees && event.attendees.map((attendee) => (
-                                        <div
-                                            key={attendee.id}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                canClickAttendees && onAttendeeClick?.(attendee);
-                                            }}
-                                            className="shrink-0"
-                                            style={{ cursor: canClickAttendees ? 'pointer' : 'default' }}
-                                        >
-                                            <Avatar src={attendee.image} size={40} />
-                                        </div>
-                                    ))}
+                                    {event.attendees && event.attendees.map((attendee) => {
+                                        const participantId = attendee.id || attendee.user;
+                                        const participantIsCreator = isCreator(attendee);
+                                        return (
+                                            <div
+                                                key={participantId}
+                                                style={{ 
+                                                    position: 'relative',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    gap: 4
+                                                }}
+                                            >
+                                                <div
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        canClickAttendees && onAttendeeClick?.(attendee);
+                                                    }}
+                                                    className="shrink-0"
+                                                    style={{ cursor: canClickAttendees ? 'pointer' : 'default', position: 'relative' }}
+                                                >
+                                                    <Avatar src={attendee.photo_url || attendee.image} size={40} />
+                                                    {isOwner && onDeleteParticipant && !participantIsCreator && (
+                                                        <IconButton
+                                                            size="xs"
+                                                            mode="bezeled"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (window.confirm('Remove this participant from the event?')) {
+                                                                    onDeleteParticipant(event.id, participantId);
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                position: 'absolute',
+                                                                top: -4,
+                                                                right: -4,
+                                                                backgroundColor: 'var(--tgui--destructive_bg_color)',
+                                                                color: 'var(--tgui--destructive_text_color)',
+                                                                width: 20,
+                                                                height: 20,
+                                                                padding: 0,
+                                                                minWidth: 20
+                                                            }}
+                                                        >
+                                                            <X size={12} />
+                                                        </IconButton>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
@@ -149,18 +199,53 @@ export function EventInformation({
                 {event.attendees && event.attendees.length > 0 && (
                     <Section header="Who's Going">
                         <div style={{ padding: '10px 20px', display: 'flex', gap: 10, overflowX: 'auto' }}>
-                            {event.attendees.map((attendee) => (
-                                <div
-                                    key={attendee.id}
-                                    onClick={() => canClickAttendees && onAttendeeClick?.(attendee)}
-                                    style={{ cursor: canClickAttendees ? 'pointer' : 'default', textAlign: 'center' }}
-                                >
-                                    <Avatar src={attendee.image} size={48} />
-                                    <div style={{ fontSize: 10, marginTop: 4, maxWidth: 48, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {attendee.name}
+                            {event.attendees.map((attendee) => {
+                                const participantId = attendee.id || attendee.user;
+                                const participantIsCreator = isCreator(attendee);
+                                return (
+                                    <div
+                                        key={participantId}
+                                        style={{ 
+                                            position: 'relative',
+                                            textAlign: 'center',
+                                            cursor: canClickAttendees ? 'pointer' : 'default'
+                                        }}
+                                        onClick={() => canClickAttendees && onAttendeeClick?.(attendee)}
+                                    >
+                                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                                            <Avatar src={attendee.photo_url || attendee.image} size={48} />
+                                            {isOwner && onDeleteParticipant && !participantIsCreator && (
+                                                <IconButton
+                                                    size="xs"
+                                                    mode="bezeled"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (window.confirm('Remove this participant from the event?')) {
+                                                            onDeleteParticipant(event.id, participantId);
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: -4,
+                                                        right: -4,
+                                                        backgroundColor: 'var(--tgui--destructive_bg_color)',
+                                                        color: 'var(--tgui--destructive_text_color)',
+                                                        width: 20,
+                                                        height: 20,
+                                                        padding: 0,
+                                                        minWidth: 20
+                                                    }}
+                                                >
+                                                    <X size={12} />
+                                                </IconButton>
+                                            )}
+                                        </div>
+                                        <div style={{ fontSize: 10, marginTop: 4, maxWidth: 48, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {attendee.display_name || attendee.name}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </Section>
                 )}
