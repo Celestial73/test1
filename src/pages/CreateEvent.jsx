@@ -9,14 +9,13 @@ import {
 } from '@telegram-apps/telegram-ui';
 import { Calendar, Clock, MapPin, Users, Image as ImageIcon } from 'lucide-react';
 import { Page } from '@/components/Page.jsx';
-import useAxiosPrivate from '@/hooks/useAxiosPrivate';
-import useAuth from '@/hooks/useAuth';
+import { eventsService } from '@/services/api/eventsService.js';
+// import useAuth from '@/hooks/useAuth'; // Reserved for future use
 
 export function CreateEvent() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const axiosPrivate = useAxiosPrivate();
-  const { auth } = useAuth();
+  // const { auth } = useAuth(); // Reserved for future use
   const isEditMode = Boolean(id);
   
   const [formData, setFormData] = useState({
@@ -34,14 +33,15 @@ export function CreateEvent() {
 
   // Fetch event data on mount if in edit mode
   useEffect(() => {
+    if (!isEditMode) return;
+
+    const abortController = new AbortController();
+
     const fetchEvent = async () => {
-      if (!isEditMode) return;
-      
       try {
         setFetching(true);
         setError(null);
-        const response = await axiosPrivate.get(`/events/${id}`);
-        const event = response.data;
+        const event = await eventsService.getEvent(id, abortController.signal);
 
         // Parse starts_at to extract date and time
         // Format is expected to be like "Saturday, Dec 23, 8:30 AM" or similar
@@ -71,15 +71,22 @@ export function CreateEvent() {
           image: event.image || event.imageUrl || '',
         });
       } catch (err) {
-        console.error('Error fetching event:', err);
-        setError(err.response?.data?.message || err.message || 'Failed to load event');
+        if (err.name !== 'AbortError' && err.name !== 'CanceledError') {
+          setError(err.response?.data?.message || err.message || 'Failed to load event');
+        }
       } finally {
-        setFetching(false);
+        if (!abortController.signal.aborted) {
+          setFetching(false);
+        }
       }
     };
 
     fetchEvent();
-  }, [id, isEditMode, axiosPrivate]);
+
+    return () => {
+      abortController.abort();
+    };
+  }, [id, isEditMode]);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -130,21 +137,15 @@ export function CreateEvent() {
         payload.description = formData.description.trim();
       }
 
-      let response;
       if (isEditMode) {
-        console.log('Updating event with payload:', payload);
-        response = await axiosPrivate.patch(`/events/${id}`, payload);
-        console.log('Event updated successfully:', response.data);
+        await eventsService.updateEvent(id, payload);
       } else {
-        console.log('Creating event with payload:', payload);
-        response = await axiosPrivate.post('/events/me', payload);
-        console.log('Event created successfully:', response.data);
+        await eventsService.createEvent(payload);
       }
       
       navigate('/events');
     } catch (err) {
-      console.error(`Error ${isEditMode ? 'updating' : 'creating'} event:`, err);
-      setError(err.response?.data?.message || err.message || `Failed to ${isEditMode ? 'update' : 'create'} event`);
+      setError(err.message || `Failed to ${isEditMode ? 'update' : 'create'} event`);
     } finally {
       setLoading(false);
     }

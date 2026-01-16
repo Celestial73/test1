@@ -120,9 +120,7 @@ export function EventInformation({
                                                             mode="bezeled"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                if (window.confirm('Remove this participant from the event?')) {
-                                                                    onDeleteParticipant(event.id, participantId);
-                                                                }
+                                                                onDeleteParticipant(event.id, participantId);
                                                             }}
                                                             style={{
                                                                 position: 'absolute',
@@ -220,9 +218,7 @@ export function EventInformation({
                                                     mode="bezeled"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (window.confirm('Remove this participant from the event?')) {
-                                                            onDeleteParticipant(event.id, participantId);
-                                                        }
+                                                        onDeleteParticipant(event.id, participantId);
                                                     }}
                                                     style={{
                                                         position: 'absolute',

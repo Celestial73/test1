@@ -4,8 +4,6 @@ import {
     Cell,
     List,
     Section,
-    Textarea,
-    Input,
     IconButton
 } from '@telegram-apps/telegram-ui';
 import {
@@ -13,10 +11,6 @@ import {
     useSignal,
 } from '@tma.js/sdk-react';
 import {
-    Camera,
-    Music,
-    Plane,
-    Coffee,
     Trash2,
     Plus as PlusIcon,
     X as XIcon,
@@ -30,11 +24,11 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Page } from '@/components/Page.jsx';
 import { DisplayData } from '@/components/DisplayData/DisplayData.jsx';
 import useAuth from '@/hooks/useAuth';
-import useAxiosPrivate from '@/hooks/useAxiosPrivate';
+import { profileService } from '@/services/api/profileService.js';
 
 export function Profile() {
     const [isEditing, setIsEditing] = useState(false);
-    const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+    const [, setCurrentPhotoIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -42,7 +36,6 @@ export function Profile() {
     const initDataState = useSignal(initData.state);
 
     const { auth } = useAuth();
-    const axiosPrivate = useAxiosPrivate();
 
     const initDataRows = useMemo(() => {
         if (!initDataState || !initDataRaw) {
@@ -111,19 +104,23 @@ export function Profile() {
 
     // Fetch profile data from backend on component mount
     useEffect(() => {
+        if (!auth?.initData) {
+            setLoading(false);
+            return;
+        }
+
+        const abortController = new AbortController();
+
         const fetchProfile = async () => {
             try {
                 setLoading(true);
                 setError(null);
-                const response = await axiosPrivate.get('/profiles/me');
-                
-                // Log the fetched profile data
-                console.log('Fetched profile data:', response.data);
+                const response = await profileService.getMyProfile(abortController.signal);
                 
                 // Update profileData with fetched data
-                if (response.data) {
+                if (response) {
                     setProfileData(prevData => {
-                        const data = response.data;
+                        const data = response;
                         // Map backend response structure to component state
                         const updatedProfile = {
                             ...prevData,
@@ -150,26 +147,25 @@ export function Profile() {
                             // Add age if it exists in backend response
                             age: data.age?.toString() || prevData.age || '',
                         };
-                        console.log('Updated profile state:', updatedProfile);
                         return updatedProfile;
                     });
                 }
             } catch (err) {
-                console.error('Error fetching profile:', err);
-                setError(err.response?.data?.message || err.message || 'Failed to fetch profile');
-                // Optionally, you might want to keep default data or handle 404 differently
-                // For now, we'll just set the error and keep the empty state
+                if (err.name !== 'AbortError' && err.name !== 'CanceledError') {
+                    setError(err.response?.data?.message || err.message || 'Failed to fetch profile');
+                }
             } finally {
-                setLoading(false);
+                if (!abortController.signal.aborted) {
+                    setLoading(false);
+                }
             }
         };
 
-        // Only fetch if we have auth (initData available)
-        if (auth?.initData) {
-            fetchProfile();
-        } else {
-            setLoading(false);
-        }
+        fetchProfile();
+
+        return () => {
+            abortController.abort();
+        };
     }, [auth?.initData]); // Re-fetch if initData changes (axiosPrivate is stable)
 
     const handleSave = async () => {
@@ -199,16 +195,12 @@ export function Profile() {
                 }
             });
             
-            console.log('Saving profile data:', payload);
-            
-            const response = await axiosPrivate.patch('/profiles/me', payload);
-            
-            console.log('Profile saved successfully:', response.data);
+            const response = await profileService.updateProfile(payload);
             
             // Update profile data with response from backend
-            if (response.data) {
+            if (response) {
                 setProfileData(prevData => {
-                    const data = response.data;
+                    const data = response;
                     const updatedProfile = {
                         ...prevData,
                         name: data.display_name || prevData.name || '',
@@ -232,9 +224,8 @@ export function Profile() {
             
             setIsEditing(false);
             setOriginalProfileData(null); // Clear original data after successful save
-        } catch (err) {
-            console.error('Error saving profile:', err);
-            setError(err.response?.data?.message || err.message || 'Failed to save profile');
+            } catch (err) {
+                setError(err.message || 'Failed to save profile');
         } 
     };
 

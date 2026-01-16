@@ -5,7 +5,7 @@ import { AnimatePresence } from 'framer-motion';
 import { EventDrawer } from './EventDrawer.jsx';
 import { ProfileDrawer } from './ProfileDrawer.jsx';
 import { Page } from '@/components/Page.jsx';
-import useAxiosPrivate from '@/hooks/useAxiosPrivate';
+import { eventsService } from '@/services/api/eventsService.js';
 import {
   List,
   Section,
@@ -46,26 +46,8 @@ const initialAcceptedRequests = [
   }
 ];
 
-// Helper function to transform API event to UI format
-const transformEvent = (apiEvent) => {
-  return {
-    id: apiEvent.id || apiEvent._id,
-    title: apiEvent.title,
-    date: apiEvent.starts_at || '', // Use starts_at as-is for date
-    time: '', // No separate time field needed
-    location: apiEvent.location,
-    description: apiEvent.description,
-    attendees: apiEvent.participants || apiEvent.attendees || [],
-    maxAttendees: apiEvent.capacity,
-    image: apiEvent.image || apiEvent.imageUrl || apiEvent.creator_profile?.photo_url || null,
-    starts_at: apiEvent.starts_at, // Keep original string
-    creator_profile: apiEvent.creator_profile, // Keep creator info in case it's needed
-  };
-};
-
 export function Events() {
   const navigate = useNavigate();
-  const axiosPrivate = useAxiosPrivate();
   const [myEvents, setMyEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -74,23 +56,31 @@ export function Events() {
   const [selectedAttendee, setSelectedAttendee] = useState(null);
 
   useEffect(() => {
+    const abortController = new AbortController();
+
     const fetchEvents = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await axiosPrivate.get('/events/me');
-        const events = response.data.results || response.data || [];
-        setMyEvents(events.map(transformEvent));
+        const events = await eventsService.getMyEvents(abortController.signal);
+        setMyEvents(events);
       } catch (err) {
-        console.error('Error fetching events:', err);
-        setError(err.response?.data?.message || err.message || 'Failed to load events');
+        if (err.name !== 'AbortError' && err.name !== 'CanceledError') {
+          setError(err.message || 'Failed to load events');
+        }
       } finally {
-        setLoading(false);
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchEvents();
-  }, [axiosPrivate]);
+
+    return () => {
+      abortController.abort();
+    };
+  }, []);
 
   const handleLeaveEvent = (eventId) => {
     // In a real app, this would make an API call
@@ -100,18 +90,15 @@ export function Events() {
 
   const handleDeleteEvent = async (eventId) => {
     try {
-      await axiosPrivate.delete(`/events/me/${eventId}`);
+      await eventsService.deleteEvent(eventId);
       // Remove the event from the list
       setMyEvents((prev) => prev.filter((e) => e.id !== eventId));
       setSelectedEvent(null);
       // Optionally refetch events to ensure consistency
-      const response = await axiosPrivate.get('/events/me');
-      const events = response.data.results || response.data || [];
-      setMyEvents(events.map(transformEvent));
+      const events = await eventsService.getMyEvents();
+      setMyEvents(events);
     } catch (err) {
-      console.error('Error deleting event:', err);
-      // You might want to show an error message to the user here
-      alert(err.response?.data?.message || err.message || 'Failed to delete event');
+      setError(err.message || 'Failed to delete event');
     }
   };
 
@@ -121,7 +108,7 @@ export function Events() {
 
   const handleDeleteParticipant = async (eventId, participantId) => {
     try {
-      await axiosPrivate.delete(`/events/me/${eventId}/participants/${participantId}`);
+      await eventsService.deleteParticipant(eventId, participantId);
       
       // Update the event in the list to remove the participant
       setMyEvents((prev) => 
@@ -148,8 +135,7 @@ export function Events() {
         }));
       }
     } catch (err) {
-      console.error('Error deleting participant:', err);
-      alert(err.response?.data?.message || err.message || 'Failed to remove participant');
+      setError(err.message || 'Failed to remove participant');
     }
   };
 

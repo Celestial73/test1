@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { initData, useSignal, useLaunchParams } from "@tma.js/sdk-react";
 import { Placeholder, AppRoot } from '@telegram-apps/telegram-ui';
 import useAuth from '../hooks/useAuth';
-import useAxios from '../hooks/useAxios';
+import { authService } from '../services/api/authService.js';
 
 const Login = () => {
     const [isLoading, setIsLoading] = useState(true);
@@ -11,15 +11,14 @@ const Login = () => {
     const { auth, setAuth } = useAuth();
     const initDataRaw = useSignal(initData.raw);
     const lp = useLaunchParams();
-    const axios = useAxios();
 
     useEffect(() => {
         let isMounted = true;
+        const abortController = new AbortController();
 
         const authenticateWithInitData = async () => {
             try {
                 if (!initDataRaw) {
-                    console.warn("InitData is not available");
                     if (isMounted) {
                         setAuthError(true);
                         setIsLoading(false);
@@ -27,34 +26,15 @@ const Login = () => {
                     return;
                 }
 
-                const response = await axios.post(
-                    "/auth/login-telegram",
-                    {},
-                    {
-                        headers: {
-                            Authorization: `Bearer ${initDataRaw}`
-                        }
-                    }
-                );
+                const authData = await authService.loginWithTelegram(initDataRaw, abortController.signal);
 
                 // If response is successful, store initData and all backend response data in auth context
-                if (response?.status === 200 || response?.status === 201) {
-                    if (isMounted) {
-                        setAuth({ 
-                            initData: initDataRaw,
-                            ...response.data // Store all data returned by backend
-                        });
-                        setAuthError(false);
-                        setIsLoading(false);
-                    }
-                } else {
-                    if (isMounted) {
-                        setAuthError(true);
-                        setIsLoading(false);
-                    }
+                if (isMounted) {
+                    setAuth(authData);
+                    setAuthError(false);
+                    setIsLoading(false);
                 }
-            } catch (error) {
-                console.error("Authentication error:", error);
+            } catch {
                 if (isMounted) {
                     setAuthError(true);
                     setIsLoading(false);
@@ -71,7 +51,10 @@ const Login = () => {
         }
 
 
-        return () => { isMounted = false; };
+        return () => {
+            isMounted = false;
+            abortController.abort();
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initDataRaw]);
 

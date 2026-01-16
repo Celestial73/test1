@@ -1,3 +1,13 @@
+/**
+ * Refresh Token Hook
+ * 
+ * NOTE: This hook is currently unused but kept for potential future use.
+ * If token refresh functionality is needed, this hook can be integrated.
+ * 
+ * TODO: Remove this file if token refresh is not needed, or integrate it
+ * when implementing token refresh functionality.
+ */
+
 import useAxios from './useAxios';
 import useAuth from './useAuth';
 
@@ -10,8 +20,6 @@ const useRefreshToken = () => {
             withCredentials: true
         });
         setAuth(prev => {
-            console.log(JSON.stringify(prev));
-            console.log(response.data.accessToken);
             return {
                 ...prev,
                 roles: response.data.roles,

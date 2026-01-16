@@ -184,7 +184,7 @@ export function Feed() {
   const handleSendMessage = () => {
     if (!messageText.trim()) return;
     // Here you would send the message to the backend
-    console.log("Sending message to event host:", messageText);
+    // Message sending would be implemented here
     setShowMessagePopup(false);
     setMessageText("");
     handleSwipe('right'); // Swipe right like a like

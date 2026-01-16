@@ -13,7 +13,7 @@ export function Page({ children, back = true }) {
       });
     }
     backButton.hide();
-  }, [back]);
+  }, [back, navigate]);
 
   return <>{children}</>;
 }

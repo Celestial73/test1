@@ -1,4 +1,3 @@
-import { IndexPage } from '@/pages/IndexPage/IndexPage.jsx';
 import { InitDataPage } from '@/pages/InitDataPage.jsx';
 import { LaunchParamsPage } from '@/pages/LaunchParamsPage.jsx';
 import { ThemeParamsPage } from '@/pages/ThemeParamsPage.jsx';
