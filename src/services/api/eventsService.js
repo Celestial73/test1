@@ -100,7 +100,7 @@ export const eventsService = {
       async (abortSignal) => {
         const config = baseServiceConfig.createRequestConfig(abortSignal);
         const cleanedData = baseServiceConfig.removeUndefined(eventData);
-        const response = await axiosPrivate.patch(`/events/${eventId}`, cleanedData, config);
+        const response = await axiosPrivate.patch(`/events/me/${eventId}`, cleanedData, config);
         return response.data;
       },
       SERVICE_NAME,
