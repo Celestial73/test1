@@ -46,9 +46,9 @@ export const baseServiceConfig = {
       // Standard error handling
       logger.error(`${serviceName}.${operationName} - Error:`, error);
       
-      // Transform to standard error format
-      const errorMessage = getErrorMessage(error);
-      throw new Error(errorMessage);
+      // Re-throw the original error to preserve all properties (response, status, code, etc.)
+      // This allows callers to access the full error structure
+      throw error;
     }
   },
 

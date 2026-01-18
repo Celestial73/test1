@@ -16,7 +16,10 @@ export default defineConfig({
   plugins: [
     // Allows using React dev server along with building a React application with Vite.
     // https://npmjs.com/package/@vitejs/plugin-react-swc
-    react(),
+    react({
+      // Enable React DevTools in development
+      jsxRuntime: 'automatic',
+    }),
     // Creates a custom SSL certificate valid for the local machine.
     // Using this plugin requires admin rights on the first dev-mode launch.
     // https://www.npmjs.com/package/vite-plugin-mkcert

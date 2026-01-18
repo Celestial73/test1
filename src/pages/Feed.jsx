@@ -65,9 +65,20 @@ export function Feed() {
         setCurrentEvent(null);
       }
     } catch (err) {
+      console.log(err);
       if (err.name !== 'AbortError' && err.name !== 'CanceledError') {
+        const errorMessage = err.message || '';
+        
+        const isNotFound = 
+          err.response?.status === 404 || 
+          errorMessage.includes('404') ||
+          errorMessage.includes('not found') ||
+          errorMessage.toLowerCase().includes('the requested resource was not found');
+        console.log(isNotFound);
+        console.log(err.response?.status);
+        console.log('fetchNextEvent error response:', err.response);
         // Handle 404 (no more events)
-        if (err.response?.status === 404 || err.message?.includes('404')) {
+        if (isNotFound) {
           setNoEventsAvailable(true);
           setCurrentEvent(null);
           setError(null);
@@ -146,6 +157,9 @@ export function Feed() {
         setSwipeDirection(null);
         setLoading(false);
         
+        // Clear current event before fetching next one
+        setCurrentEvent(null);
+        
         // Fetch next event
         fetchNextEvent();
       }, 300);
@@ -174,6 +188,9 @@ export function Feed() {
         setAnimating(false);
         setSwipeDirection(null);
         setLoading(false);
+        
+        // Clear current event before fetching next one
+        setCurrentEvent(null);
         
         // Fetch next event
         fetchNextEvent();
