@@ -11,5 +11,6 @@
 export { authService } from './authService.js';
 export { eventsService } from './eventsService.js';
 export { profileService } from './profileService.js';
+export { feedService } from './feedService.js';
 export { baseServiceConfig, withErrorHandling } from './baseService.js';
 
