@@ -5,6 +5,7 @@
 
 import { axiosPrivate } from '../../api/axios.js';
 import { baseServiceConfig } from './baseService.js';
+import { formatDateToDDMMYYYY } from '../../utils/dateFormatter.js';
 
 const SERVICE_NAME = 'eventsService';
 
@@ -17,14 +18,12 @@ const transformEvent = (apiEvent) => {
   return {
     id: apiEvent.id || apiEvent._id,
     title: apiEvent.title,
-    date: apiEvent.starts_at || '',
-    time: '',
+    date: formatDateToDDMMYYYY(apiEvent.date) || '',
     location: apiEvent.location,
     description: apiEvent.description,
     attendees: apiEvent.participants || apiEvent.attendees || [],
     maxAttendees: apiEvent.capacity,
     image: apiEvent.image || apiEvent.imageUrl || apiEvent.creator_profile?.photo_url || null,
-    starts_at: apiEvent.starts_at,
     creator_profile: apiEvent.creator_profile,
   };
 };

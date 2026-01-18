@@ -7,10 +7,81 @@ import {
   Textarea,
   Button,
 } from '@telegram-apps/telegram-ui';
-import { Calendar, Clock, MapPin, Users, Image as ImageIcon } from 'lucide-react';
+import { Calendar, MapPin, Users, Image as ImageIcon } from 'lucide-react';
 import { Page } from '@/components/Page.jsx';
 import { eventsService } from '@/services/api/eventsService.js';
+import { RUSSIAN_CITIES } from '@/data/russianCities.js';
 // import useAuth from '@/hooks/useAuth'; // Reserved for future use
+
+/**
+ * Parse ISO datetime string to date format for form input
+ * @param {string} isoString - ISO datetime string (e.g., "2024-07-15T00:00:00Z")
+ * @returns {string} Date string in YYYY-MM-DD format for form input
+ */
+const parseISODateToFormInput = (isoString) => {
+  if (!isoString) return '';
+  
+  try {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return '';
+    
+    // Format date as YYYY-MM-DD for input[type="date"]
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    return '';
+  }
+};
+
+/**
+ * Convert date string to ISO 8601 date-only format (YYYY-MM-DD)
+ * @param {string} dateStr - Date string (e.g., "2024-07-15" or "2024/07/15")
+ * @returns {string|null} ISO 8601 date-only string (YYYY-MM-DD) or null if invalid
+ */
+const convertDateToISO8601 = (dateStr) => {
+  if (!dateStr) return null;
+  
+  try {
+    // If already in YYYY-MM-DD format, validate and return
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return dateStr; // Return as-is if valid
+      }
+    }
+    
+    // Parse date - handle various formats
+    let date;
+    if (dateStr.includes('-')) {
+      // ISO format: YYYY-MM-DD
+      date = new Date(dateStr);
+    } else if (dateStr.includes('/')) {
+      // Slash format: MM/DD/YYYY or DD/MM/YYYY
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        // Assume MM/DD/YYYY format
+        date = new Date(`${parts[2]}-${parts[0]}-${parts[1]}`);
+      } else {
+        date = new Date(dateStr);
+      }
+    } else {
+      // Try native Date parsing
+      date = new Date(dateStr);
+    }
+    
+    if (isNaN(date.getTime())) return null;
+    
+    // Format as ISO 8601 date-only string (YYYY-MM-DD)
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    return null;
+  }
+};
 
 export function CreateEvent() {
   const navigate = useNavigate();
@@ -21,7 +92,7 @@ export function CreateEvent() {
   const [formData, setFormData] = useState({
     title: '',
     date: '',
-    time: '',
+    town: '',
     location: '',
     maxAttendees: '',
     description: '',
@@ -30,6 +101,8 @@ export function CreateEvent() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(isEditMode);
   const [error, setError] = useState(null);
+  const [townSuggestions, setTownSuggestions] = useState([]);
+  const [showTownSuggestions, setShowTownSuggestions] = useState(false);
 
   // Fetch event data on mount if in edit mode
   useEffect(() => {
@@ -43,28 +116,13 @@ export function CreateEvent() {
         setError(null);
         const event = await eventsService.getEvent(id, abortController.signal);
 
-        // Parse starts_at to extract date and time
-        // Format is expected to be like "Saturday, Dec 23, 8:30 AM" or similar
-        let date = '';
-        let time = '';
-        if (event.starts_at) {
-          // Try to parse the starts_at string
-          // If it contains a comma, split it
-          const parts = event.starts_at.split(',').map(p => p.trim());
-          if (parts.length >= 2) {
-            // First part(s) are date, last part is time
-            date = parts.slice(0, -1).join(', ');
-            time = parts[parts.length - 1];
-          } else {
-            // If no comma, use the whole string as date
-            date = event.starts_at;
-          }
-        }
+        // Parse ISO date from API to form input
+        const dateStr = parseISODateToFormInput(event.date || '');
 
         setFormData({
           title: event.title || '',
-          date: date,
-          time: time,
+          date: dateStr,
+          town: event.town || '',
           location: event.location || '',
           maxAttendees: event.capacity?.toString() || '',
           description: event.description || '',
@@ -91,6 +149,23 @@ export function CreateEvent() {
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setError(null);
+    
+    // Handle town autocomplete
+    if (field === 'town') {
+      const filtered = value
+        ? RUSSIAN_CITIES.filter(city => 
+            city.toLowerCase().startsWith(value.toLowerCase())
+          ).slice(0, 10) // Show max 10 suggestions
+        : [];
+      setTownSuggestions(filtered);
+      setShowTownSuggestions(value.length > 0 && filtered.length > 0);
+    }
+  };
+
+  const handleTownSelect = (town) => {
+    setFormData(prev => ({ ...prev, town }));
+    setShowTownSuggestions(false);
+    setTownSuggestions([]);
   };
 
   const handleSubmit = async (e) => {
@@ -106,8 +181,12 @@ export function CreateEvent() {
       setError('Date is required');
       return;
     }
-    if (!formData.time.trim()) {
-      setError('Time is required');
+    if (!formData.town.trim()) {
+      setError('Town is required');
+      return;
+    }
+    if (!RUSSIAN_CITIES.includes(formData.town)) {
+      setError('Please select a valid town from the list');
       return;
     }
     if (!formData.location.trim()) {
@@ -121,14 +200,20 @@ export function CreateEvent() {
 
     setLoading(true);
     try {
-      // Combine date and time into a string for starts_at
-      const startsAt = `${formData.date}, ${formData.time}`;
+      // Convert date to ISO 8601 date-only format (YYYY-MM-DD)
+      const dateISO = convertDateToISO8601(formData.date);
+      if (!dateISO) {
+        setError('Invalid date format. Please use a valid date.');
+        setLoading(false);
+        return;
+      }
 
       // Prepare payload according to Swagger documentation
       const payload = {
         title: formData.title.trim(),
+        town: formData.town.trim(),
         location: formData.location.trim(),
-        starts_at: startsAt,
+        date: dateISO, // Required: ISO 8601 date-only string (YYYY-MM-DD)
         capacity: parseInt(formData.maxAttendees),
       };
 
@@ -200,14 +285,14 @@ export function CreateEvent() {
                 Date *
               </div>
               <Input
-                type="text"
+                type="date"
                 value={formData.date}
                 onChange={(e) => handleChange('date', e.target.value)}
-                placeholder="Enter date"
+                placeholder="YYYY-MM-DD"
               />
             </div>
 
-            <div style={{ padding: '12px 20px' }}>
+            <div style={{ padding: '12px 20px', position: 'relative' }}>
               <div style={{ 
                 fontSize: '14px', 
                 fontWeight: 500, 
@@ -217,15 +302,67 @@ export function CreateEvent() {
                 alignItems: 'center',
                 gap: '8px'
               }}>
-                <Clock size={16} />
-                Time *
+                <MapPin size={16} />
+                Town *
               </div>
               <Input
-                type="text"
-                value={formData.time}
-                onChange={(e) => handleChange('time', e.target.value)}
-                placeholder="Enter time"
+                value={formData.town}
+                onChange={(e) => handleChange('town', e.target.value)}
+                onFocus={() => {
+                  if (formData.town) {
+                    const filtered = RUSSIAN_CITIES.filter(city => 
+                      city.toLowerCase().startsWith(formData.town.toLowerCase())
+                    ).slice(0, 10);
+                    setTownSuggestions(filtered);
+                    setShowTownSuggestions(filtered.length > 0);
+                  }
+                }}
+                onBlur={() => {
+                  // Delay hiding suggestions to allow click on suggestion
+                  setTimeout(() => setShowTownSuggestions(false), 200);
+                }}
+                placeholder="Enter town"
+                autoComplete="off"
               />
+              {showTownSuggestions && townSuggestions.length > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: '20px',
+                  right: '20px',
+                  backgroundColor: 'var(--tgui--bg_color)',
+                  border: '1px solid var(--tgui--section_separator_color)',
+                  borderRadius: '12px',
+                  marginTop: '4px',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  zIndex: 1000,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                }}>
+                  {townSuggestions.map((city, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleTownSelect(city)}
+                      onMouseDown={(e) => e.preventDefault()} // Prevent input blur
+                      style={{
+                        padding: '12px 16px',
+                        cursor: 'pointer',
+                        borderBottom: index < townSuggestions.length - 1 ? '1px solid var(--tgui--section_separator_color)' : 'none',
+                        fontSize: '14px',
+                        color: 'var(--tgui--text_color)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--tgui--secondary_bg_color)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      {city}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div style={{ padding: '12px 20px' }}>

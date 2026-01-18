@@ -1,4 +1,4 @@
-import { Calendar, Clock, MapPin, Users, X } from "lucide-react";
+import { Calendar, MapPin, Users, X } from "lucide-react";
 import {
     Avatar,
     Cell,
@@ -63,18 +63,12 @@ export function EventInformation({
                                 </div>
                             )}
 
-                            {/* Dense Meta Info (Date, Time, Location) */}
+                            {/* Dense Meta Info (Date, Location) */}
                             <div style={{ padding: '0 16px', marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                                 {event.date && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--tgui--secondary_bg_color)', padding: '6px 12px', borderRadius: 12, fontSize: 13, fontWeight: 500 }}>
                                         <Calendar size={16} className="text-pink-500" />
                                         <span>{event.date}</span>
-                                    </div>
-                                )}
-                                {event.time && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--tgui--secondary_bg_color)', padding: '6px 12px', borderRadius: 12, fontSize: 13, fontWeight: 500 }}>
-                                        <Clock size={16} className="text-pink-500" />
-                                        <span>{event.time}</span>
                                     </div>
                                 )}
                                 {event.location && (
@@ -160,14 +154,6 @@ export function EventInformation({
                             description="Date"
                         >
                             {event.date}
-                        </Cell>
-                    )}
-                    {event.time && (
-                        <Cell
-                            before={<Clock size={20} style={{ color: 'var(--tgui--link_color)' }} />}
-                            description="Time"
-                        >
-                            {event.time}
                         </Cell>
                     )}
                     {event.location && (

@@ -172,7 +172,7 @@ export function Events() {
                 key={event.id}
                 onClick={() => setSelectedEvent(event)}
                 before={<Avatar src={event.image} size={48} />}
-                description={event.date || event.starts_at || ''}
+                description={event.date || ''}
                 after={
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: 12, opacity: 0.6 }}>
                     <span>{event.attendees?.length || 0}/{event.maxAttendees}</span>
