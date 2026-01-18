@@ -107,7 +107,7 @@ export function EventInformation({
                                                     className="shrink-0"
                                                     style={{ cursor: canClickAttendees ? 'pointer' : 'default', position: 'relative' }}
                                                 >
-                                                    <Avatar src={attendee.photo_url || attendee.image} size={40} />
+                                                    <Avatar src={attendee.profile?.photo_url || attendee.photo_url || attendee.image || attendee.photos?.[0]} size={40} />
                                                     {isOwner && onDeleteParticipant && !participantIsCreator && (
                                                         <IconButton
                                                             size="xs"
@@ -197,7 +197,7 @@ export function EventInformation({
                                         onClick={() => canClickAttendees && onAttendeeClick?.(attendee)}
                                     >
                                         <div style={{ position: 'relative', display: 'inline-block' }}>
-                                            <Avatar src={attendee.photo_url || attendee.image} size={48} />
+                                            <Avatar src={attendee.profile?.photo_url || attendee.photo_url || attendee.image || attendee.photos?.[0]} size={48} />
                                             {isOwner && onDeleteParticipant && !participantIsCreator && (
                                                 <IconButton
                                                     size="xs"
