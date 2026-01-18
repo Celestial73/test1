@@ -39,7 +39,39 @@ export function Feed() {
   const [showMessagePopup, setShowMessagePopup] = useState(false);
   const [messageText, setMessageText] = useState("");
 
-  // Fetch next event from API
+  // Helper function to fetch event from API without setting state
+  const fetchEventData = async (abortSignal = null) => {
+    if (!town || !town.trim()) {
+      return null;
+    }
+
+    const townHash = getTownHash(town);
+    if (!townHash) {
+      return null;
+    }
+
+    try {
+      const event = await feedService.getNextEvent(townHash, null, null, abortSignal);
+      return event || null;
+    } catch (err) {
+      if (err.name !== 'AbortError' && err.name !== 'CanceledError') {
+        const isNotFound = 
+          err.response?.status === 404 || 
+          err.message?.includes('404') ||
+          err.message?.includes('not found') ||
+          err.message?.toLowerCase().includes('the requested resource was not found');
+        
+        // Return null for 404 (no more events), throw otherwise
+        if (isNotFound) {
+          return null;
+        }
+        throw err;
+      }
+      return null;
+    }
+  };
+
+  // Fetch next event from API and update state
   const fetchNextEvent = async (abortSignal = null) => {
     if (!town || !town.trim()) {
       setError('Please select a town');
@@ -56,7 +88,7 @@ export function Feed() {
       setFetching(true);
       setError(null);
       setNoEventsAvailable(false);
-      const event = await feedService.getNextEvent(townHash, null, null, abortSignal);
+      const event = await fetchEventData(abortSignal);
       if (event) {
         setCurrentEvent(event);
         setNoEventsAvailable(false);
@@ -148,21 +180,31 @@ export function Feed() {
       setAnimating(true);
       setSwipeDirection('left');
 
-      // Record action
-      await feedService.recordAction(currentEvent.id, 'skip');
+      // Record action and fetch next event in parallel
+      const currentEventId = currentEvent.id;
+      const actionPromise = feedService.recordAction(currentEventId, 'skip');
+      const nextEventPromise = fetchEventData();
 
-      // Animation
+      // Wait for action to complete
+      await actionPromise;
+
+      // Wait for next event, then update state
+      const nextEvent = await nextEventPromise;
+      
+      // Small delay to let exit animation start, then swap events
       window.setTimeout(() => {
+        if (nextEvent) {
+          setCurrentEvent(nextEvent);
+        } else {
+          setCurrentEvent(null);
+        }
         setAnimating(false);
-        setSwipeDirection(null);
         setLoading(false);
-        
-        // Clear current event before fetching next one
-        setCurrentEvent(null);
-        
-        // Fetch next event
-        fetchNextEvent();
-      }, 300);
+        // Reset swipeDirection after enter animation completes
+        window.setTimeout(() => {
+          setSwipeDirection(null);
+        }, 300);
+      }, 150);
     } catch (err) {
       setAnimating(false);
       setSwipeDirection(null);
@@ -180,21 +222,31 @@ export function Feed() {
       setAnimating(true);
       setSwipeDirection('right');
 
-      // Record action
-      await feedService.recordAction(currentEvent.id, 'like');
+      // Record action and fetch next event in parallel
+      const currentEventId = currentEvent.id;
+      const actionPromise = feedService.recordAction(currentEventId, 'like');
+      const nextEventPromise = fetchEventData();
 
-      // Animation
+      // Wait for action to complete
+      await actionPromise;
+
+      // Wait for next event, then update state
+      const nextEvent = await nextEventPromise;
+      
+      // Small delay to let exit animation start, then swap events
       window.setTimeout(() => {
+        if (nextEvent) {
+          setCurrentEvent(nextEvent);
+        } else {
+          setCurrentEvent(null);
+        }
         setAnimating(false);
-        setSwipeDirection(null);
         setLoading(false);
-        
-        // Clear current event before fetching next one
-        setCurrentEvent(null);
-        
-        // Fetch next event
-        fetchNextEvent();
-      }, 300);
+        // Reset swipeDirection after enter animation completes
+        window.setTimeout(() => {
+          setSwipeDirection(null);
+        }, 300);
+      }, 150);
     } catch (err) {
       setAnimating(false);
       setSwipeDirection(null);
@@ -355,32 +407,52 @@ export function Feed() {
                 </Button>
               </div>
             </div>
-          ) : fetching && !currentEvent ? (
-            <div style={{ padding: 20, textAlign: 'center', opacity: 0.5 }}>
-              Loading event...
-            </div>
-          ) : currentEvent ? (
+          ) : (
             <div style={{ width: '100%', maxWidth: 340, margin: '0 auto', aspectRatio: '3/4', maxHeight: 600 }}>
-              {/* Card Container */}
-              <div
-                style={{
-                  width: '100%',
-                  position: 'relative',
-                  borderRadius: 24,
-                  overflow: 'hidden',
-                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  backgroundColor: 'var(--tgui--bg_color)',
-                  transition: 'all 0.3s ease',
-                  transform: animating
-                    ? swipeDirection === "left"
-                      ? "translateX(-120%) rotate(-12deg)"
-                      : "translateX(120%) rotate(12deg)"
-                    : "translateX(0) rotate(0)",
-                  opacity: animating ? 0 : 1
-                }}
-              >
+              <AnimatePresence mode="wait">
+                {fetching && !currentEvent ? (
+                  <motion.div
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    style={{ padding: 20, textAlign: 'center', opacity: 0.5 }}
+                  >
+                    Loading event...
+                  </motion.div>
+                ) : currentEvent ? (
+                  <motion.div
+                    key={currentEvent.id}
+                    initial={{ 
+                      opacity: 0, 
+                      x: swipeDirection === 'left' ? 120 : -120,
+                      rotate: swipeDirection === 'left' ? 12 : -12
+                    }}
+                    animate={{ 
+                      opacity: 1, 
+                      x: 0,
+                      rotate: 0
+                    }}
+                    exit={{ 
+                      opacity: 0,
+                      x: swipeDirection === 'left' ? -120 : 120,
+                      rotate: swipeDirection === 'left' ? -12 : 12
+                    }}
+                    transition={{ 
+                      duration: 0.3,
+                      ease: "easeOut"
+                    }}
+                    style={{
+                      width: '100%',
+                      position: 'relative',
+                      borderRadius: 24,
+                      overflow: 'hidden',
+                      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      backgroundColor: 'var(--tgui--bg_color)'
+                    }}
+                  >
                 {/* Content - Dense Card */}
                 <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--tgui--bg_color)' }}>
                   <EventInformation
@@ -390,9 +462,12 @@ export function Feed() {
                     variant="card"
                   />
                 </div>
-              </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
 
-              {/* Action Buttons */}
+              {/* Action Buttons - Only show when event exists */}
+              {currentEvent && (
               <div style={{
                 margin: '32px auto 0',
                 width: '100%',
@@ -470,10 +545,7 @@ export function Feed() {
                   <Heart size={32} color="white" fill="white" />
                 </button>
               </div>
-            </div>
-          ) : (
-            <div style={{ padding: 20, textAlign: 'center', opacity: 0.5 }}>
-              {!town ? 'Select a town to see events' : 'No events available'}
+              )}
             </div>
           )}
         </main>
